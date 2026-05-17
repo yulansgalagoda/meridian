@@ -34,13 +34,13 @@ const segments: Segment[] = TIMELINE_SEGMENTS.reduce<Segment[]>((acc, seg) => {
   return acc;
 }, []);
 
-// SVG dimensions — large enough to read comfortably
+// SVG dimensions
 const VB_W = 300;
-const VB_H = 520;
+const VB_H = 400;
 const LINE_X = 148;
 const DOT_R = 5;
 const BRANCH_LEN = 56;
-const PAD_Y = 48;
+const PAD_Y = 36;
 
 function dotY(year: number, lo: number, hi: number): number {
   if (hi === lo) return VB_H / 2;
