@@ -8,6 +8,10 @@ interface Props {
 
 const { item, eager = false } = Astro.props;
 
+function slug(s: string): string {
+  return (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 const metaParts: string[] = [];
 if (item.era) metaParts.push(item.era);
 if (item.originCountry) metaParts.push(item.originCountry);
@@ -17,13 +21,12 @@ if (item.originCountry) metaParts.push(item.originCountry);
   href={`/collection/${item.slug}`}
   class="item-card reveal"
   aria-label={item.name}
-  data-filter={JSON.stringify({
-    era: item.era,
-    category: item.categoryName ?? '',
-    origin: item.originCountry,
-    tag: item.tags,
-    condition: item.condition,
-  })}
+  data-name={item.name.toLowerCase()}
+  data-era={slug(item.era)}
+  data-category={slug(item.categoryName ?? '')}
+  data-origin={slug(item.originCountry)}
+  data-tag={item.tags.map(slug).join('|')}
+  data-condition={slug(item.condition)}
 >
   <div class="item-card__image">
     {item.primaryImage ? (
