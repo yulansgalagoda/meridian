@@ -129,7 +129,7 @@ for (const item of items) {
               </div>
               <div class="item-grid feat-grid">
                 {displayItems.map((item, i) => (
-                  <ItemCard item={item} eager={i < 2} />
+                  <ItemCard item={item} eager={i < 2} compact />
                 ))}
               </div>
             </div>
@@ -140,11 +140,16 @@ for (const item of items) {
                 <h2 class="row-header__title eyebrow">Categories</h2>
               </div>
               <ul class="cat-list">
-                {categories.map((cat) => (
+                {categories.filter(cat => (catCounts.get(cat.slug) ?? 0) > 0).map((cat) => (
                   <li>
                     <a href={`/categories/${cat.slug}`} class="cat-list-item">
                       <span class="cat-list-item__left">
-                        {cat.icon && <span class="cat-list-item__icon" aria-hidden="true">{cat.icon}</span>}
+                        {cat.coverImage
+                          ? <img class="cat-list-item__thumb" src={cat.coverImage} alt={cat.name} loading="lazy" decoding="async" />
+                          : cat.icon
+                            ? <span class="cat-list-item__icon" aria-hidden="true">{cat.icon}</span>
+                            : null
+                        }
                         <span class="cat-list-item__name">{cat.name}</span>
                       </span>
                       <span class="cat-list-item__count">
@@ -386,6 +391,14 @@ for (const item of items) {
     flex-shrink: 0;
     width: 1.5rem;
     text-align: center;
+  }
+
+  .cat-list-item__thumb {
+    flex-shrink: 0;
+    width: 3rem;
+    height: 2.25rem;
+    object-fit: cover;
+    display: block;
   }
 
   .cat-list-item__name {

@@ -4,9 +4,10 @@ import type { Item } from '../lib/types';
 interface Props {
   item: Item;
   eager?: boolean;
+  compact?: boolean;
 }
 
-const { item, eager = false } = Astro.props;
+const { item, eager = false, compact = false } = Astro.props;
 
 function slug(s: string): string {
   return (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -19,7 +20,7 @@ if (item.originCountry) metaParts.push(item.originCountry);
 
 <a
   href={`/collection/${item.slug}`}
-  class="item-card reveal"
+  class:list={['item-card reveal', compact && 'item-card--compact']}
   aria-label={item.name}
   data-name={item.name.toLowerCase()}
   data-era={slug(item.era)}
@@ -48,7 +49,7 @@ if (item.originCountry) metaParts.push(item.originCountry);
   </div>
   <div class="item-card__body">
     <p class="item-card__name">{item.name}</p>
-    {item.shortDescription && (
+    {!compact && item.shortDescription && (
       <p class="item-card__desc">{item.shortDescription}</p>
     )}
     {metaParts.length > 0 && (
