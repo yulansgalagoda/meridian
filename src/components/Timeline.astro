@@ -10,7 +10,6 @@ const { items } = Astro.props;
 
 const currentYear = new Date().getFullYear();
 
-// Build active segments: only those that contain at least one item with a year.
 type Segment = {
   label: string;
   from: number;
@@ -35,45 +34,49 @@ const segments: Segment[] = TIMELINE_SEGMENTS.reduce<Segment[]>((acc, seg) => {
   return acc;
 }, []);
 
-// SVG dimensions
-const SVG_W = 220;
-const SVG_H = 380;
-const LINE_X = 100;
-const DOT_R = 3.5;
-const BRANCH_LEN = 32;
-const PAD_Y = 28;
+// SVG dimensions — large enough to read comfortably
+const VB_W = 300;
+const VB_H = 520;
+const LINE_X = 148;
+const DOT_R = 5;
+const BRANCH_LEN = 56;
+const PAD_Y = 48;
 
 function dotY(year: number, lo: number, hi: number): number {
-  const clampedLo = lo === -Infinity ? Math.min(...[]) : lo;
-  const clampedHi = hi === Infinity ? currentYear : hi;
-  if (clampedHi === clampedLo) return SVG_H / 2;
-  return PAD_Y + ((year - clampedLo) / (clampedHi - clampedLo)) * (SVG_H - PAD_Y * 2);
+  if (hi === lo) return VB_H / 2;
+  return PAD_Y + ((year - lo) / (hi - lo)) * (VB_H - PAD_Y * 2);
 }
 
 function buildSegmentSVG(seg: Segment): string {
   const lo = seg.from === -Infinity ? seg.items[0].year : seg.from;
   const hi = seg.to === Infinity ? currentYear : seg.to;
 
+  // Era label at top and bottom of line
+  const loLabel = lo < 0 ? `${Math.abs(lo)} BCE` : String(lo);
+  const hiLabel = hi === currentYear ? String(currentYear) : String(hi);
+
   let dots = '';
   seg.items.forEach((item, i) => {
     const y = dotY(item.year, lo, hi);
-    const side = i % 2 === 0 ? 1 : -1; // alternate left/right
+    const side = i % 2 === 0 ? 1 : -1;
     const bx = LINE_X + side * BRANCH_LEN;
     const anchor = side === 1 ? 'start' : 'end';
-    const labelX = bx + side * 6;
+    const labelX = bx + side * 8;
 
     dots += `
       <g class="tl-dot" data-slug="${item.slug}" data-name="${item.name.replace(/"/g, '&quot;')}" data-year="${item.year}" style="cursor:pointer">
-        <line x1="${LINE_X}" y1="${y}" x2="${bx}" y2="${y}" stroke="var(--stone-4)" stroke-width="0.75"/>
-        <circle cx="${bx}" cy="${y}" r="${DOT_R}" fill="var(--stone)" stroke="var(--oxblood)" stroke-width="1.25" class="tl-dot__circle"/>
-        <text x="${labelX}" y="${y + 1}" font-size="8" fill="var(--ink-faint)" dominant-baseline="middle" text-anchor="${anchor}" class="tl-dot__label">${item.year}</text>
+        <line x1="${LINE_X}" y1="${y}" x2="${bx}" y2="${y}" stroke="var(--stone-4)" stroke-width="1"/>
+        <circle cx="${bx}" cy="${y}" r="${DOT_R}" fill="var(--stone)" stroke="var(--oxblood)" stroke-width="1.5" class="tl-dot__circle"/>
+        <text x="${labelX}" y="${y + 1}" font-size="11" fill="var(--ink-mute)" dominant-baseline="middle" text-anchor="${anchor}" class="tl-dot__year">${item.year}</text>
       </g>`;
   });
 
   return `
-    <line x1="${LINE_X}" y1="${PAD_Y}" x2="${LINE_X}" y2="${SVG_H - PAD_Y}" stroke="var(--stone-4)" stroke-width="1"/>
-    <circle cx="${LINE_X}" cy="${PAD_Y}" r="2" fill="var(--stone-4)"/>
-    <circle cx="${LINE_X}" cy="${SVG_H - PAD_Y}" r="2" fill="var(--stone-4)"/>
+    <text x="${LINE_X}" y="${PAD_Y - 18}" font-size="10" fill="var(--ink-faint)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${loLabel}</text>
+    <line x1="${LINE_X}" y1="${PAD_Y}" x2="${LINE_X}" y2="${VB_H - PAD_Y}" stroke="var(--stone-4)" stroke-width="1.25"/>
+    <circle cx="${LINE_X}" cy="${PAD_Y}" r="2.5" fill="var(--stone-4)"/>
+    <circle cx="${LINE_X}" cy="${VB_H - PAD_Y}" r="2.5" fill="var(--stone-4)"/>
+    <text x="${LINE_X}" y="${VB_H - PAD_Y + 20}" font-size="10" fill="var(--ink-faint)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${hiLabel}</text>
     ${dots}
   `;
 }
@@ -81,44 +84,53 @@ function buildSegmentSVG(seg: Segment): string {
 
 {segments.length > 0 && (
   <div class="timeline" id="timeline" aria-label="Collection timeline" role="region">
-    <div class="timeline__label-row">
-      <span class="timeline__seg-label eyebrow" id="tl-seg-label">{segments[0].label}</span>
-      <span class="timeline__count eyebrow" id="tl-seg-count">{segments[0].items.length} {segments[0].items.length === 1 ? 'object' : 'objects'}</span>
+
+    <!-- Segment label row -->
+    <div class="timeline__header">
+      <span class="tl-seg-label" id="tl-seg-label">{segments[0].label}</span>
+      <span class="tl-count" id="tl-seg-count">
+        {segments[0].items.length} {segments[0].items.length === 1 ? 'object' : 'objects'}
+      </span>
     </div>
 
+    <!-- SVG stage -->
     <div class="timeline__stage" id="tl-stage">
       {segments.map((seg, i) => (
         <svg
-          class={`timeline__svg${i === 0 ? ' is-active' : ''}`}
+          class={`timeline__svg${i === 0 ? ' is-active' : ' enter-from-below'}`}
           data-index={i}
           data-label={seg.label}
           data-count={seg.items.length}
-          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-          width={SVG_W}
-          height={SVG_H}
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          preserveAspectRatio="xMidYMid meet"
           aria-hidden="true"
           set:html={buildSegmentSVG(seg)}
         />
       ))}
 
       <!-- Tooltip -->
-      <div class="tl-tooltip" id="tl-tooltip" role="tooltip" aria-live="polite">
+      <div class="tl-tooltip" id="tl-tooltip" role="tooltip">
         <span class="tl-tooltip__name" id="tl-tooltip-name"></span>
         <span class="tl-tooltip__year" id="tl-tooltip-year"></span>
       </div>
     </div>
 
-    <!-- Navigation arrows -->
+    <!-- Navigation -->
     {segments.length > 1 && (
       <div class="timeline__nav">
-        <button class="tl-arrow tl-arrow--up" id="tl-prev" aria-label="Earlier period" disabled>
-          <svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M1 5L5 1l4 4"/>
+        <button class="tl-arrow" id="tl-prev" aria-label="Earlier period" disabled>
+          <svg viewBox="0 0 12 7" width="12" height="7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M1 6L6 1l5 5"/>
           </svg>
         </button>
-        <button class="tl-arrow tl-arrow--down" id="tl-next" aria-label="Later period">
-          <svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M1 1l4 4 4-4"/>
+        <span class="tl-nav-dots" id="tl-nav-dots">
+          {segments.map((_, i) => (
+            <span class={`tl-nav-dot${i === 0 ? ' is-active' : ''}`} data-goto={i} />
+          ))}
+        </span>
+        <button class="tl-arrow" id="tl-next" aria-label="Later period">
+          <svg viewBox="0 0 12 7" width="12" height="7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M1 1l5 5 5-5"/>
           </svg>
         </button>
       </div>
@@ -128,71 +140,105 @@ function buildSegmentSVG(seg: Segment): string {
 
 <style>
   .timeline {
-    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
     user-select: none;
   }
 
-  .timeline__label-row {
+  .timeline__header {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    padding-bottom: 1rem;
+    padding-bottom: var(--sp-4);
     border-bottom: 1px solid var(--stone-3);
-    margin-bottom: 1rem;
+    margin-bottom: var(--sp-4);
+    flex-shrink: 0;
   }
 
-  .timeline__seg-label {
+  .tl-seg-label {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
     color: var(--oxblood);
-    letter-spacing: 0.1em;
     transition: opacity 0.4s var(--ease-io);
   }
 
-  .timeline__count {
+  .tl-count {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
     color: var(--ink-faint);
-    font-size: 0.65rem;
   }
 
+  /* Stage clips the sliding SVGs */
   .timeline__stage {
     position: relative;
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .timeline__svg {
     position: absolute;
-    opacity: 0;
-    transition: opacity 0.6s var(--ease-io);
+    inset: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
+    /* default hidden state — below */
+    opacity: 0;
+    transform: translateY(32px);
+    transition:
+      opacity 0.55s var(--ease-out),
+      transform 0.55s var(--ease-out);
   }
 
   .timeline__svg.is-active {
     opacity: 1;
+    transform: translateY(0);
     pointer-events: all;
   }
 
+  /* Positioned above, ready to slide down into view (going prev) */
+  .timeline__svg.enter-from-above {
+    transform: translateY(-32px);
+    opacity: 0;
+  }
+
+  /* Exiting upward (going next) */
+  .timeline__svg.exit-up {
+    opacity: 0;
+    transform: translateY(-32px);
+    pointer-events: none;
+  }
+
+  /* Exiting downward (going prev) */
+  .timeline__svg.exit-down {
+    opacity: 0;
+    transform: translateY(32px);
+    pointer-events: none;
+  }
+
+  /* Dots */
   .tl-dot__circle {
     transition:
       r 0.4s var(--ease-out),
-      fill 0.4s var(--ease-io);
+      fill 0.35s var(--ease-io);
   }
 
   .tl-dot:hover .tl-dot__circle {
-    r: 5.5;
+    r: 7.5;
     fill: var(--oxblood-faint);
   }
 
-  .tl-dot__label {
-    transition: fill 0.3s var(--ease-io);
+  .tl-dot__year {
+    transition: fill 0.3s var(--ease-io), font-size 0.3s var(--ease-io);
   }
 
-  .tl-dot:hover .tl-dot__label {
-    fill: var(--ink-mute);
+  .tl-dot:hover .tl-dot__year {
+    fill: var(--ink-soft);
+    font-size: 13px;
   }
 
   /* Tooltip */
@@ -200,32 +246,31 @@ function buildSegmentSVG(seg: Segment): string {
     position: absolute;
     background: var(--ink);
     color: var(--stone);
-    padding: 0.4rem 0.7rem;
+    padding: 0.5rem 0.85rem;
     pointer-events: none;
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(0.97);
     transition:
       opacity 0.3s var(--ease-io),
       transform 0.3s var(--ease-io);
-    white-space: nowrap;
     z-index: 10;
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
-    max-width: 14rem;
-    white-space: normal;
+    gap: 0.15rem;
+    max-width: 15rem;
   }
 
   .tl-tooltip.is-visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 
   .tl-tooltip__name {
     font-family: var(--font-display);
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 400;
     line-height: 1.3;
+    color: var(--stone);
   }
 
   .tl-tooltip__year {
@@ -236,31 +281,30 @@ function buildSegmentSVG(seg: Segment): string {
     color: var(--ink-faint);
   }
 
-  /* Nav arrows */
+  /* Nav */
   .timeline__nav {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding-top: 1rem;
+    justify-content: space-between;
+    padding-top: var(--sp-4);
     border-top: 1px solid var(--stone-3);
-    margin-top: 1rem;
+    margin-top: var(--sp-4);
+    flex-shrink: 0;
   }
 
   .tl-arrow {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    width: 2.25rem;
+    height: 2.25rem;
     background: none;
     border: 1px solid var(--stone-3);
     color: var(--ink-faint);
     cursor: pointer;
     transition:
       border-color 0.4s var(--ease-io),
-      color 0.4s var(--ease-io),
-      opacity 0.4s var(--ease-io);
+      color 0.4s var(--ease-io);
   }
 
   .tl-arrow:hover {
@@ -269,9 +313,31 @@ function buildSegmentSVG(seg: Segment): string {
   }
 
   .tl-arrow:disabled {
-    opacity: 0.25;
+    opacity: 0.2;
     cursor: default;
     pointer-events: none;
+  }
+
+  .tl-nav-dots {
+    display: flex;
+    gap: var(--sp-2);
+    align-items: center;
+  }
+
+  .tl-nav-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--stone-4);
+    cursor: pointer;
+    transition:
+      background 0.4s var(--ease-io),
+      transform 0.4s var(--ease-io);
+  }
+
+  .tl-nav-dot.is-active {
+    background: var(--oxblood);
+    transform: scale(1.4);
   }
 </style>
 
@@ -287,81 +353,101 @@ function buildSegmentSVG(seg: Segment): string {
   const segCount = document.getElementById('tl-seg-count')!;
   const prevBtn = document.getElementById('tl-prev') as HTMLButtonElement | null;
   const nextBtn = document.getElementById('tl-next') as HTMLButtonElement | null;
+  const navDots = Array.from(document.querySelectorAll<HTMLElement>('.tl-nav-dot'));
 
   let current = 0;
+  let animating = false;
 
-  function goTo(index: number) {
-    if (index < 0 || index >= svgs.length) return;
-    svgs[current].classList.remove('is-active');
+  function goTo(index: number, direction: 'next' | 'prev') {
+    if (index < 0 || index >= svgs.length || animating) return;
+    animating = true;
+
+    const outgoing = svgs[current];
+    const incoming = svgs[index];
+
+    // Position incoming off-screen in the correct direction
+    incoming.classList.remove('is-active', 'enter-from-above', 'enter-from-below', 'exit-up', 'exit-down');
+    incoming.classList.add(direction === 'next' ? 'enter-from-below' : 'enter-from-above');
+
+    // Force reflow so the initial transform is painted before transition
+    incoming.getBoundingClientRect();
+
+    // Slide outgoing out
+    outgoing.classList.remove('is-active');
+    outgoing.classList.add(direction === 'next' ? 'exit-up' : 'exit-down');
+
+    // Slide incoming in
+    incoming.classList.remove('enter-from-above', 'enter-from-below');
+    incoming.classList.add('is-active');
+
+    // Update labels
     current = index;
-    svgs[current].classList.add('is-active');
-
     segLabel.textContent = svgs[current].dataset.label ?? '';
     const count = Number(svgs[current].dataset.count ?? 0);
     segCount.textContent = `${count} ${count === 1 ? 'object' : 'objects'}`;
 
+    // Update nav dots
+    navDots.forEach((d, i) => d.classList.toggle('is-active', i === current));
+
+    // Update buttons
     if (prevBtn) prevBtn.disabled = current === 0;
     if (nextBtn) nextBtn.disabled = current === svgs.length - 1;
+
+    setTimeout(() => {
+      outgoing.classList.remove('exit-up', 'exit-down');
+      animating = false;
+    }, 600);
   }
 
-  prevBtn?.addEventListener('click', () => goTo(current - 1));
-  nextBtn?.addEventListener('click', () => goTo(current + 1));
+  prevBtn?.addEventListener('click', () => goTo(current - 1, 'prev'));
+  nextBtn?.addEventListener('click', () => goTo(current + 1, 'next'));
 
-  // Mousewheel navigation — only when cursor is over the timeline
+  // Nav dot clicks
+  navDots.forEach((dot, i) => {
+    dot.addEventListener('click', () => goTo(i, i > current ? 'next' : 'prev'));
+  });
+
+  // Mousewheel — captured only when hovering the timeline
   const timeline = document.getElementById('timeline');
   let wheelCooldown = false;
   timeline?.addEventListener('wheel', (e: WheelEvent) => {
     e.preventDefault();
-    if (wheelCooldown) return;
+    if (wheelCooldown || animating) return;
     wheelCooldown = true;
-    goTo(e.deltaY > 0 ? current + 1 : current - 1);
+    goTo(e.deltaY > 0 ? current + 1 : current - 1, e.deltaY > 0 ? 'next' : 'prev');
     setTimeout(() => { wheelCooldown = false; }, 700);
   }, { passive: false });
 
-  // Dot hover tooltip
-  function showTooltip(dot: Element, svg: SVGElement) {
+  // Tooltip
+  stage.addEventListener('mouseover', (e) => {
+    const dot = (e.target as Element).closest<Element>('.tl-dot');
+    if (!dot) return;
     const name = dot.getAttribute('data-name') ?? '';
     const year = dot.getAttribute('data-year') ?? '';
     tooltipName.textContent = name;
     tooltipYear.textContent = year;
 
-    // Position relative to stage
-    const dotCircle = dot.querySelector('circle');
-    if (!dotCircle) return;
+    const circle = dot.querySelector('circle');
+    if (!circle) return;
     const stageRect = stage.getBoundingClientRect();
-    const circleRect = dotCircle.getBoundingClientRect();
-    const top = circleRect.top - stageRect.top - tooltip.offsetHeight - 8;
-    const left = circleRect.left - stageRect.left + circleRect.width / 2 - tooltip.offsetWidth / 2;
-
-    tooltip.style.top = `${top}px`;
-    tooltip.style.left = `${Math.max(4, left)}px`;
+    const cr = circle.getBoundingClientRect();
+    tooltip.style.top = `${cr.top - stageRect.top - 72}px`;
+    tooltip.style.left = `${Math.max(4, cr.left - stageRect.left - 60)}px`;
     tooltip.classList.add('is-visible');
-  }
-
-  function hideTooltip() {
-    tooltip.classList.remove('is-visible');
-  }
-
-  // Dot click navigates to item
-  stage.addEventListener('click', (e) => {
-    const dot = (e.target as Element).closest<Element>('.tl-dot');
-    if (!dot) return;
-    const slug = dot.getAttribute('data-slug');
-    if (slug) window.location.href = `/collection/${slug}`;
-  });
-
-  stage.addEventListener('mouseover', (e) => {
-    const dot = (e.target as Element).closest<Element>('.tl-dot');
-    if (!dot) return;
-    const svg = dot.closest<SVGElement>('.timeline__svg');
-    if (svg) showTooltip(dot, svg);
   });
 
   stage.addEventListener('mouseout', (e) => {
-    const dot = (e.target as Element).closest<Element>('.tl-dot');
-    if (dot) hideTooltip();
+    if ((e.target as Element).closest('.tl-dot')) tooltip.classList.remove('is-visible');
   });
 
-  // Init
-  goTo(0);
+  stage.addEventListener('click', (e) => {
+    const dot = (e.target as Element).closest<Element>('.tl-dot');
+    if (dot?.getAttribute('data-slug')) {
+      window.location.href = `/collection/${dot.getAttribute('data-slug')}`;
+    }
+  });
+
+  // Init state
+  if (prevBtn) prevBtn.disabled = true;
+  if (nextBtn) nextBtn.disabled = svgs.length <= 1;
 </script>
