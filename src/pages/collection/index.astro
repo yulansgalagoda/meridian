@@ -1,0 +1,45 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import ItemCard from '../../components/ItemCard.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import { getSiteData } from '../../lib/notion';
+
+const { items, categories } = await getSiteData();
+---
+
+<Base
+  title="Collection"
+  description={`${items.length} antiques and historical objects in the archive.`}
+>
+  <Header />
+
+  <main>
+    <div class="container">
+      <header class="page-header">
+        <p class="eyebrow eyebrow--accent">The Collection</p>
+        <h1 class="page-header__title">All objects</h1>
+        <p class="page-header__desc">
+          {items.length} {items.length === 1 ? 'object' : 'objects'} in the archive.
+        </p>
+      </header>
+
+      <FilterBar items={items} categories={categories} />
+
+      <p class="filter-count" id="filter-count" aria-live="polite"></p>
+
+      <div class="item-grid" id="item-grid">
+        {items.map((item) => (
+          <ItemCard item={item} />
+        ))}
+      </div>
+
+      {items.length === 0 && (
+        <p class="no-results">Nothing here yet.</p>
+      )}
+    </div>
+  </main>
+
+  <Footer itemCount={items.length} />
+</Base>

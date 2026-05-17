@@ -1,0 +1,108 @@
+---
+import type { Item, Category } from '../lib/types';
+
+interface Props {
+  items: Item[];
+  categories: Category[];
+}
+
+const { items, categories } = Astro.props;
+
+// Derive available filter values from the actual collection (skip empties)
+function unique(vals: string[]): string[] {
+  return [...new Set(vals.filter(Boolean))].sort();
+}
+
+const eras = unique(items.map((i) => i.era));
+const countries = unique(items.map((i) => i.originCountry));
+const conditions = unique(items.map((i) => i.condition));
+const allTags = unique(items.flatMap((i) => i.tags));
+const catOptions = categories
+  .filter((c) => items.some((i) => i.categorySlug === c.slug))
+  .sort((a, b) => a.displayOrder - b.displayOrder);
+
+const groups = [
+  { key: 'era', label: 'Era', options: eras },
+  { key: 'category', label: 'Category', options: catOptions.map((c) => c.name) },
+  { key: 'origin', label: 'Origin', options: countries },
+  { key: 'tag', label: 'Tags', options: allTags },
+  { key: 'condition', label: 'Condition', options: conditions },
+].filter((g) => g.options.length > 0);
+---
+
+<div class="filter-bar" id="filter-bar" aria-label="Filter collection">
+  <div class="filter-groups">
+    {groups.map((group) => (
+      <div class="filter-group">
+        <span class="filter-group__label">{group.label}</span>
+        <div class="filter-group__pills">
+          {group.options.map((opt) => (
+            <button
+              class="filter-btn"
+              data-filter-key={group.key}
+              data-filter-val={opt}
+              type="button"
+              aria-pressed="false"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<script>
+  const bar = document.getElementById('filter-bar');
+  if (!bar) throw new Error('FilterBar not found');
+
+  const grid = document.getElementById('item-grid');
+  const countEl = document.getElementById('filter-count');
+  const cards = Array.from(
+    document.querySelectorAll<HTMLElement>('.item-card[data-filter]')
+  );
+
+  // Active filters: key → Set of values (OR within a group, AND across groups)
+  const active = new Map<string, Set<string>>();
+
+  function toggle(key: string, val: string) {
+    if (!active.has(key)) active.set(key, new Set());
+    const set = active.get(key)!;
+    if (set.has(val)) set.delete(val);
+    else set.add(val);
+    if (set.size === 0) active.delete(key);
+  }
+
+  function applyFilters() {
+    let visible = 0;
+    cards.forEach((card) => {
+      const data = JSON.parse(card.dataset.filter ?? '{}') as Record<string, string | string[]>;
+      const passes = [...active.entries()].every(([key, vals]) => {
+        const cardVal = data[key];
+        if (Array.isArray(cardVal)) return [...vals].some((v) => cardVal.includes(v));
+        return vals.has(String(cardVal));
+      });
+      card.hidden = !passes;
+      if (passes) visible++;
+    });
+
+    if (countEl) {
+      countEl.textContent = active.size === 0
+        ? ''
+        : `${visible} ${visible === 1 ? 'object' : 'objects'}`;
+    }
+  }
+
+  bar.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest<HTMLButtonElement>('.filter-btn');
+    if (!btn) return;
+    const key = btn.dataset.filterKey!;
+    const val = btn.dataset.filterVal!;
+    toggle(key, val);
+    const isActive = active.get(key)?.has(val) ?? false;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+    applyFilters();
+  });
+</script>

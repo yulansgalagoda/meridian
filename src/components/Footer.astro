@@ -1,0 +1,18 @@
+---
+interface Props {
+  itemCount?: number;
+}
+const { itemCount } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="site-footer__inner">
+      <a href="/" class="site-footer__name">The Meridian</a>
+      <p class="site-footer__meta">
+        {itemCount !== undefined && `${itemCount} ${itemCount === 1 ? 'object' : 'objects'} · `}YG · {year}
+      </p>
+    </div>
+  </div>
+</footer>

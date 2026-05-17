@@ -1,0 +1,367 @@
+---
+import type { Item } from '../lib/types';
+import { TIMELINE_SEGMENTS } from '../lib/types';
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+
+const currentYear = new Date().getFullYear();
+
+// Build active segments: only those that contain at least one item with a year.
+type Segment = {
+  label: string;
+  from: number;
+  to: number;
+  items: Array<{ slug: string; name: string; year: number }>;
+};
+
+const segments: Segment[] = TIMELINE_SEGMENTS.reduce<Segment[]>((acc, seg) => {
+  const segItems = items
+    .filter((item) => {
+      if (item.year === null) return false;
+      const lo = seg.from === -Infinity ? -Infinity : seg.from;
+      const hi = seg.to === Infinity ? Infinity : seg.to;
+      return item.year >= lo && item.year <= hi;
+    })
+    .map((item) => ({ slug: item.slug, name: item.name, year: item.year as number }))
+    .sort((a, b) => a.year - b.year);
+
+  if (segItems.length > 0) {
+    acc.push({ label: seg.label, from: seg.from, to: seg.to, items: segItems });
+  }
+  return acc;
+}, []);
+
+// SVG dimensions
+const SVG_W = 220;
+const SVG_H = 380;
+const LINE_X = 100;
+const DOT_R = 3.5;
+const BRANCH_LEN = 32;
+const PAD_Y = 28;
+
+function dotY(year: number, lo: number, hi: number): number {
+  const clampedLo = lo === -Infinity ? Math.min(...[]) : lo;
+  const clampedHi = hi === Infinity ? currentYear : hi;
+  if (clampedHi === clampedLo) return SVG_H / 2;
+  return PAD_Y + ((year - clampedLo) / (clampedHi - clampedLo)) * (SVG_H - PAD_Y * 2);
+}
+
+function buildSegmentSVG(seg: Segment): string {
+  const lo = seg.from === -Infinity ? seg.items[0].year : seg.from;
+  const hi = seg.to === Infinity ? currentYear : seg.to;
+
+  let dots = '';
+  seg.items.forEach((item, i) => {
+    const y = dotY(item.year, lo, hi);
+    const side = i % 2 === 0 ? 1 : -1; // alternate left/right
+    const bx = LINE_X + side * BRANCH_LEN;
+    const anchor = side === 1 ? 'start' : 'end';
+    const labelX = bx + side * 6;
+
+    dots += `
+      <g class="tl-dot" data-slug="${item.slug}" data-name="${item.name.replace(/"/g, '&quot;')}" data-year="${item.year}" style="cursor:pointer">
+        <line x1="${LINE_X}" y1="${y}" x2="${bx}" y2="${y}" stroke="var(--stone-4)" stroke-width="0.75"/>
+        <circle cx="${bx}" cy="${y}" r="${DOT_R}" fill="var(--stone)" stroke="var(--oxblood)" stroke-width="1.25" class="tl-dot__circle"/>
+        <text x="${labelX}" y="${y + 1}" font-size="8" fill="var(--ink-faint)" dominant-baseline="middle" text-anchor="${anchor}" class="tl-dot__label">${item.year}</text>
+      </g>`;
+  });
+
+  return `
+    <line x1="${LINE_X}" y1="${PAD_Y}" x2="${LINE_X}" y2="${SVG_H - PAD_Y}" stroke="var(--stone-4)" stroke-width="1"/>
+    <circle cx="${LINE_X}" cy="${PAD_Y}" r="2" fill="var(--stone-4)"/>
+    <circle cx="${LINE_X}" cy="${SVG_H - PAD_Y}" r="2" fill="var(--stone-4)"/>
+    ${dots}
+  `;
+}
+---
+
+{segments.length > 0 && (
+  <div class="timeline" id="timeline" aria-label="Collection timeline" role="region">
+    <div class="timeline__label-row">
+      <span class="timeline__seg-label eyebrow" id="tl-seg-label">{segments[0].label}</span>
+      <span class="timeline__count eyebrow" id="tl-seg-count">{segments[0].items.length} {segments[0].items.length === 1 ? 'object' : 'objects'}</span>
+    </div>
+
+    <div class="timeline__stage" id="tl-stage">
+      {segments.map((seg, i) => (
+        <svg
+          class={`timeline__svg${i === 0 ? ' is-active' : ''}`}
+          data-index={i}
+          data-label={seg.label}
+          data-count={seg.items.length}
+          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+          width={SVG_W}
+          height={SVG_H}
+          aria-hidden="true"
+          set:html={buildSegmentSVG(seg)}
+        />
+      ))}
+
+      <!-- Tooltip -->
+      <div class="tl-tooltip" id="tl-tooltip" role="tooltip" aria-live="polite">
+        <span class="tl-tooltip__name" id="tl-tooltip-name"></span>
+        <span class="tl-tooltip__year" id="tl-tooltip-year"></span>
+      </div>
+    </div>
+
+    <!-- Navigation arrows -->
+    {segments.length > 1 && (
+      <div class="timeline__nav">
+        <button class="tl-arrow tl-arrow--up" id="tl-prev" aria-label="Earlier period" disabled>
+          <svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M1 5L5 1l4 4"/>
+          </svg>
+        </button>
+        <button class="tl-arrow tl-arrow--down" id="tl-next" aria-label="Later period">
+          <svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M1 1l4 4 4-4"/>
+          </svg>
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+<style>
+  .timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    user-select: none;
+  }
+
+  .timeline__label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--stone-3);
+    margin-bottom: 1rem;
+  }
+
+  .timeline__seg-label {
+    color: var(--oxblood);
+    letter-spacing: 0.1em;
+    transition: opacity 0.4s var(--ease-io);
+  }
+
+  .timeline__count {
+    color: var(--ink-faint);
+    font-size: 0.65rem;
+  }
+
+  .timeline__stage {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+  }
+
+  .timeline__svg {
+    position: absolute;
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-io);
+    pointer-events: none;
+  }
+
+  .timeline__svg.is-active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .tl-dot__circle {
+    transition:
+      r 0.4s var(--ease-out),
+      fill 0.4s var(--ease-io);
+  }
+
+  .tl-dot:hover .tl-dot__circle {
+    r: 5.5;
+    fill: var(--oxblood-faint);
+  }
+
+  .tl-dot__label {
+    transition: fill 0.3s var(--ease-io);
+  }
+
+  .tl-dot:hover .tl-dot__label {
+    fill: var(--ink-mute);
+  }
+
+  /* Tooltip */
+  .tl-tooltip {
+    position: absolute;
+    background: var(--ink);
+    color: var(--stone);
+    padding: 0.4rem 0.7rem;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition:
+      opacity 0.3s var(--ease-io),
+      transform 0.3s var(--ease-io);
+    white-space: nowrap;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    max-width: 14rem;
+    white-space: normal;
+  }
+
+  .tl-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .tl-tooltip__name {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.3;
+  }
+
+  .tl-tooltip__year {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* Nav arrows */
+  .timeline__nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--stone-3);
+    margin-top: 1rem;
+  }
+
+  .tl-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: none;
+    border: 1px solid var(--stone-3);
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition:
+      border-color 0.4s var(--ease-io),
+      color 0.4s var(--ease-io),
+      opacity 0.4s var(--ease-io);
+  }
+
+  .tl-arrow:hover {
+    border-color: var(--stone-4);
+    color: var(--ink-mute);
+  }
+
+  .tl-arrow:disabled {
+    opacity: 0.25;
+    cursor: default;
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  const stage = document.getElementById('tl-stage');
+  if (!stage) throw new Error('Timeline stage not found');
+
+  const svgs = Array.from(stage.querySelectorAll<SVGElement>('.timeline__svg'));
+  const tooltip = document.getElementById('tl-tooltip')!;
+  const tooltipName = document.getElementById('tl-tooltip-name')!;
+  const tooltipYear = document.getElementById('tl-tooltip-year')!;
+  const segLabel = document.getElementById('tl-seg-label')!;
+  const segCount = document.getElementById('tl-seg-count')!;
+  const prevBtn = document.getElementById('tl-prev') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('tl-next') as HTMLButtonElement | null;
+
+  let current = 0;
+
+  function goTo(index: number) {
+    if (index < 0 || index >= svgs.length) return;
+    svgs[current].classList.remove('is-active');
+    current = index;
+    svgs[current].classList.add('is-active');
+
+    segLabel.textContent = svgs[current].dataset.label ?? '';
+    const count = Number(svgs[current].dataset.count ?? 0);
+    segCount.textContent = `${count} ${count === 1 ? 'object' : 'objects'}`;
+
+    if (prevBtn) prevBtn.disabled = current === 0;
+    if (nextBtn) nextBtn.disabled = current === svgs.length - 1;
+  }
+
+  prevBtn?.addEventListener('click', () => goTo(current - 1));
+  nextBtn?.addEventListener('click', () => goTo(current + 1));
+
+  // Mousewheel navigation — only when cursor is over the timeline
+  const timeline = document.getElementById('timeline');
+  let wheelCooldown = false;
+  timeline?.addEventListener('wheel', (e: WheelEvent) => {
+    e.preventDefault();
+    if (wheelCooldown) return;
+    wheelCooldown = true;
+    goTo(e.deltaY > 0 ? current + 1 : current - 1);
+    setTimeout(() => { wheelCooldown = false; }, 700);
+  }, { passive: false });
+
+  // Dot hover tooltip
+  function showTooltip(dot: Element, svg: SVGElement) {
+    const name = dot.getAttribute('data-name') ?? '';
+    const year = dot.getAttribute('data-year') ?? '';
+    tooltipName.textContent = name;
+    tooltipYear.textContent = year;
+
+    // Position relative to stage
+    const dotCircle = dot.querySelector('circle');
+    if (!dotCircle) return;
+    const stageRect = stage.getBoundingClientRect();
+    const circleRect = dotCircle.getBoundingClientRect();
+    const top = circleRect.top - stageRect.top - tooltip.offsetHeight - 8;
+    const left = circleRect.left - stageRect.left + circleRect.width / 2 - tooltip.offsetWidth / 2;
+
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${Math.max(4, left)}px`;
+    tooltip.classList.add('is-visible');
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove('is-visible');
+  }
+
+  // Dot click navigates to item
+  stage.addEventListener('click', (e) => {
+    const dot = (e.target as Element).closest<Element>('.tl-dot');
+    if (!dot) return;
+    const slug = dot.getAttribute('data-slug');
+    if (slug) window.location.href = `/collection/${slug}`;
+  });
+
+  stage.addEventListener('mouseover', (e) => {
+    const dot = (e.target as Element).closest<Element>('.tl-dot');
+    if (!dot) return;
+    const svg = dot.closest<SVGElement>('.timeline__svg');
+    if (svg) showTooltip(dot, svg);
+  });
+
+  stage.addEventListener('mouseout', (e) => {
+    const dot = (e.target as Element).closest<Element>('.tl-dot');
+    if (dot) hideTooltip();
+  });
+
+  // Init
+  goTo(0);
+</script>

@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getSiteData } from '../lib/notion';
+
+const { aboutHtml, items } = await getSiteData();
+---
+
+<Base
+  title="About"
+  description="About The Meridian — a private archive of antiques and historical objects by YG."
+>
+  <Header />
+
+  <main>
+    <div class="container">
+      <header class="page-header" style="max-width: var(--container-narrow);">
+        <p class="eyebrow eyebrow--accent">About</p>
+        <h1 class="page-header__title">The Meridian</h1>
+      </header>
+
+      <article class="about-body" style="max-width: var(--container-narrow);" set:html={aboutHtml} />
+    </div>
+  </main>
+
+  <Footer itemCount={items.length} />
+</Base>

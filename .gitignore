@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# environment
+.env
+.env.local
+
+# astro
+.astro/
+
+# images downloaded at build — do not commit
+public/images/
+
+# OS
+.DS_Store
+Thumbs.db

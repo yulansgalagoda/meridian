@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Base title="Not found" description="This page does not exist.">
+  <Header />
+  <main>
+    <div class="error-page">
+      <p class="error-page__code">404</p>
+      <h1 class="error-page__title">Object not found</h1>
+      <p class="error-page__text">
+        This page does not exist, or the item may have moved.
+      </p>
+      <a href="/collection" class="eyebrow eyebrow--accent" style="margin-top: var(--sp-4); text-decoration: none; letter-spacing: var(--tracking-caps);">
+        Return to collection
+      </a>
+    </div>
+  </main>
+  <Footer />
+</Base>

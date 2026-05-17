@@ -1,0 +1,60 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import ItemCard from '../../components/ItemCard.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import { getSiteData } from '../../lib/notion';
+
+export async function getStaticPaths() {
+  const { items, categories } = await getSiteData();
+  return categories.map((cat) => ({
+    params: { slug: cat.slug },
+    props: { cat, items: items.filter((i) => i.categorySlug === cat.slug) },
+  }));
+}
+
+const { cat, items } = Astro.props;
+const { categories } = await getSiteData();
+---
+
+<Base
+  title={cat.name}
+  description={cat.description || `${items.length} objects in ${cat.name}.`}
+  image={cat.coverImage ?? undefined}
+>
+  <Header />
+
+  <main>
+    <div class="container">
+      <header class="page-header">
+        <p class="eyebrow eyebrow--accent">Category</p>
+        <h1 class="page-header__title">{cat.name}</h1>
+        {cat.description && (
+          <p class="page-header__desc">{cat.description}</p>
+        )}
+        <p class="page-header__count eyebrow" style="margin-top: var(--sp-4); color: var(--ink-faint);">
+          {items.length} {items.length === 1 ? 'object' : 'objects'}
+        </p>
+      </header>
+
+      {items.length > 1 && (
+        <FilterBar items={items} categories={categories} />
+      )}
+
+      <p class="filter-count" id="filter-count" aria-live="polite"></p>
+
+      <div class="item-grid" id="item-grid">
+        {items.map((item) => (
+          <ItemCard item={item} />
+        ))}
+      </div>
+
+      {items.length === 0 && (
+        <p class="no-results">Nothing here yet.</p>
+      )}
+    </div>
+  </main>
+
+  <Footer itemCount={items.length} />
+</Base>

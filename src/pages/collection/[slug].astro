@@ -1,0 +1,237 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { getSiteData, fetchItemContent } from '../../lib/notion';
+
+export async function getStaticPaths() {
+  const { items } = await getSiteData();
+  return items.map((item) => ({ params: { slug: item.slug }, props: { item } }));
+}
+
+const { item } = Astro.props;
+const bodyHtml = await fetchItemContent(item.id);
+
+const allImages = [
+  ...(item.primaryImage ? [item.primaryImage] : []),
+  ...item.galleryImages,
+];
+
+const metaFields = [
+  { label: 'Year', value: item.year !== null ? (item.dateDetail ? `${item.year} · ${item.dateDetail}` : String(item.year)) : item.dateDetail || null },
+  { label: 'Era', value: item.era || null },
+  { label: 'Maker', value: item.maker || null },
+  { label: 'Origin', value: item.originCountry || null },
+  { label: 'Materials', value: item.materials || null },
+  { label: 'Dimensions', value: item.dimensions || null },
+  { label: 'Condition', value: item.condition || null },
+  { label: 'Category', value: item.categoryName || null },
+].filter((f) => f.value !== null);
+---
+
+<Base
+  title={item.name}
+  description={item.shortDescription || item.story || undefined}
+  image={item.primaryImage ?? undefined}
+>
+  <Header />
+
+  <main class="item-page">
+    <div class="container container--narrow">
+
+      <!-- Back -->
+      <nav class="item-back" aria-label="Breadcrumb">
+        <a href="/collection" class="item-back__link eyebrow">
+          <svg viewBox="0 0 10 8" width="10" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M9 4H1M4 1L1 4l3 3"/>
+          </svg>
+          Collection
+        </a>
+        {item.categoryName && item.categorySlug && (
+          <>
+            <span class="item-back__sep" aria-hidden="true">/</span>
+            <a href={`/categories/${item.categorySlug}`} class="item-back__link eyebrow">
+              {item.categoryName}
+            </a>
+          </>
+        )}
+      </nav>
+
+      <!-- Header -->
+      <header class="item-page__header">
+        <p class="eyebrow eyebrow--accent">{item.era || 'Object'}</p>
+        <h1 class="item-page__name">{item.name}</h1>
+        {item.shortDescription && (
+          <p class="item-page__short">{item.shortDescription}</p>
+        )}
+      </header>
+    </div>
+
+    <!-- Image area — full container width -->
+    <div class="item-image-area">
+      <div id="lightbox-trigger">
+        {item.primaryImage ? (
+          <img
+            src={item.primaryImage}
+            alt={item.imageAltText || item.name}
+            class="item-primary-image"
+            loading="eager"
+            decoding="async"
+            id="primary-img"
+            style="cursor: zoom-in;"
+          />
+        ) : (
+          <div class="item-primary-placeholder">
+            <svg viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2">
+              <rect x="2" y="2" width="28" height="28" rx="1"/>
+              <path d="M2 22l8-8 6 6 5-5 9 9"/>
+              <circle cx="11" cy="11" r="3"/>
+            </svg>
+          </div>
+        )}
+      </div>
+
+      <!-- Thumbnail strip -->
+      {allImages.length > 1 && (
+        <div class="gallery-strip container" id="gallery-strip">
+          {allImages.map((src, i) => (
+            <img
+              src={src}
+              alt={`${item.name} view ${i + 1}`}
+              class={`gallery-thumb${i === 0 ? ' is-active' : ''}`}
+              loading="lazy"
+              decoding="async"
+              data-index={i}
+              data-src={src}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div class="container container--narrow">
+      <!-- Metadata -->
+      {metaFields.length > 0 && (
+        <dl class="item-meta-block">
+          {metaFields.map((field) => (
+            <div class="item-meta-field">
+              <dt class="item-meta-field__label">{field.label}</dt>
+              <dd class="item-meta-field__value">{field.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      <!-- Tags -->
+      {item.tags.length > 0 && (
+        <div class="tag-list" style="margin-top: var(--sp-6);">
+          {item.tags.map((tag) => (
+            <span class="tag">{tag}</span>
+          ))}
+        </div>
+      )}
+
+      <!-- Body -->
+      {bodyHtml && (
+        <article class="item-body" set:html={bodyHtml} />
+      )}
+    </div>
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <button class="lightbox__close" id="lightbox-close" aria-label="Close">
+      <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M1 1l12 12M13 1L1 13"/>
+      </svg>
+    </button>
+    <img class="lightbox__img" id="lightbox-img" src="" alt="" />
+  </div>
+
+  <Footer />
+</Base>
+
+<style>
+  .item-back {
+    padding-top: var(--sp-8);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: 0;
+  }
+
+  .item-back__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    color: var(--ink-faint);
+    text-decoration: none;
+    font-size: 0.65rem;
+    letter-spacing: var(--tracking-caps);
+    transition: color var(--dur-base) var(--ease-io);
+  }
+  .item-back__link:hover { color: var(--ink-mute); }
+
+  .item-back__sep {
+    color: var(--stone-4);
+    font-size: var(--text-xs);
+  }
+
+  .item-image-area {
+    margin-block: var(--sp-8);
+  }
+
+  .item-primary-placeholder {
+    width: 100%;
+    height: 40vh;
+    background: var(--stone-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+
+<script>
+  const primaryImg = document.getElementById('primary-img') as HTMLImageElement | null;
+  const strip = document.getElementById('gallery-strip');
+  const lightbox = document.getElementById('lightbox')!;
+  const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+  const closeBtn = document.getElementById('lightbox-close');
+
+  // Thumbnail swapping
+  strip?.addEventListener('click', (e) => {
+    const thumb = (e.target as Element).closest<HTMLElement>('.gallery-thumb');
+    if (!thumb || !primaryImg) return;
+    const src = thumb.dataset.src!;
+    primaryImg.src = src;
+    strip.querySelectorAll('.gallery-thumb').forEach((t) => t.classList.remove('is-active'));
+    thumb.classList.add('is-active');
+  });
+
+  // Open lightbox
+  function openLightbox(src: string, alt: string) {
+    lightboxImg.src = src;
+    lightboxImg.alt = alt;
+    lightbox.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('lightbox-trigger')?.addEventListener('click', () => {
+    if (primaryImg) openLightbox(primaryImg.src, primaryImg.alt);
+  });
+
+  closeBtn?.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+</script>

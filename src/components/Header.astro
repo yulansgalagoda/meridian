@@ -1,0 +1,32 @@
+---
+import '../styles/global.css';
+
+const nav = [
+  { href: '/collection', label: 'Collection' },
+  { href: '/about', label: 'About' },
+];
+
+const pathname = Astro.url.pathname;
+---
+
+<header class="site-header">
+  <div class="container">
+    <div class="site-header__inner">
+      <a href="/" class="site-logo">The Meridian</a>
+      <nav aria-label="Primary navigation">
+        <ul class="site-nav">
+          {nav.map(({ href, label }) => (
+            <li>
+              <a
+                href={href}
+                aria-current={pathname.startsWith(href) ? 'page' : undefined}
+              >
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
