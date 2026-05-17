@@ -213,9 +213,10 @@ h1, h2, h3, h4 {
 
 /* ── Footer ─────────────────────────────────────────────────────────────────── */
 .site-footer {
-  border-top: 1px solid var(--stone-3);
+  border-top: 1px solid var(--stone-4);
   padding-block: var(--sp-10);
   margin-top: auto;
+  background: var(--stone-3);
 }
 
 .site-footer__inner {
@@ -243,7 +244,7 @@ h1, h2, h3, h4 {
 .site-footer__credit {
   margin-top: var(--sp-4);
   padding-top: var(--sp-4);
-  border-top: 1px solid var(--stone-3);
+  border-top: 1px solid var(--stone-4);
   font-size: var(--text-xs);
   color: var(--ink-faint);
   letter-spacing: 0.01em;

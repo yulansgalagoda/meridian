@@ -44,10 +44,10 @@ for (const item of items) {
     <div class="container home">
 
       <!-- ── Row 1: Introduction + Timeline ───────────────────────────────── -->
-      <section class="hrow hrow--hero" aria-label="Introduction">
+      <section class="hrow hrow--hero hrow--dark" aria-label="Introduction">
         <div class="hrow__left">
           <p class="eyebrow eyebrow--accent">The Meridian</p>
-          <h1 class="intro-title">A private archive of antiques and historical objects.</h1>
+          <h1 class="intro-title">A private Archive of History.</h1>
           <p class="intro-body">
             Objects acquired, studied, and documented. Each one a fixed point
             on the long line from the first tools to the present day.
@@ -65,7 +65,7 @@ for (const item of items) {
       </section>
 
       <!-- ── Row 2: Why I Collect + Stats ─────────────────────────────────── -->
-      <section class="hrow" aria-label="Why I collect">
+      <section class="hrow hrow--light" aria-label="Why I collect">
         <div class="hrow__left">
           <p class="eyebrow eyebrow--muted">Why I collect</p>
           <blockquote class="why-quote">
@@ -121,7 +121,7 @@ for (const item of items) {
 
       <!-- ── Row 3: Featured items + Categories ───────────────────────────── -->
       {(displayItems.length > 0 || categories.length > 0) && (
-        <section class="hrow" aria-label="Featured and categories">
+        <section class="hrow hrow--mid" aria-label="Featured and categories">
           {displayItems.length > 0 && (
             <div class="hrow__left">
               <div class="row-header">
@@ -221,23 +221,50 @@ for (const item of items) {
     margin-bottom: var(--sp-6);
   }
 
+  /* Row tone variants */
+  .hrow--dark {
+    background: var(--stone-3);
+  }
+
+  .hrow--dark .hrow__left {
+    border-right-color: var(--stone-4);
+  }
+
+  .hrow--light {
+    background: var(--surface);
+  }
+
+  .hrow--light .hrow__left {
+    border-right-color: var(--stone-3);
+  }
+
+  .hrow--mid {
+    background: var(--stone-2);
+  }
+
   /* Timeline panel — distinct background, fills full column height */
   .hrow__right--timeline {
     justify-content: flex-start;
     overflow: hidden;
     background: var(--stone-2);
+    padding-right: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  /* On dark row, timeline panel is darker still */
+  .hrow--dark .hrow__right--timeline {
+    background: var(--stone-4);
   }
 
   /* ── Row 1: Introduction ──────────────────────────────────────────────────── */
   .intro-title {
     font-family: var(--font-display);
-    font-size: clamp(2.75rem, 5vw, 5.5rem);
+    font-size: clamp(2.25rem, 4vw, 4.5rem);
     font-weight: 400;
-    line-height: 1.08;
-    letter-spacing: -0.025em;
+    line-height: 1.1;
+    letter-spacing: -0.022em;
     color: var(--ink);
     margin-top: var(--sp-5);
-    max-width: 18ch;
+    max-width: 20ch;
   }
 
   .intro-body {
@@ -270,7 +297,7 @@ for (const item of items) {
   /* ── Row 2: Why I collect ─────────────────────────────────────────────────── */
   .why-quote {
     font-family: var(--font-display);
-    font-size: clamp(1.5rem, 2.5vw, 2.4rem);
+    font-size: clamp(1.4rem, 2.2vw, 2rem);
     font-weight: 400;
     line-height: 1.45;
     letter-spacing: -0.01em;
@@ -278,7 +305,7 @@ for (const item of items) {
     margin: 0 0 var(--sp-6);
     padding: 0;
     border: none;
-    max-width: 40ch;
+    max-width: 42ch;
   }
 
   .why-quote::before {
@@ -315,7 +342,7 @@ for (const item of items) {
 
   .stat__val {
     font-family: var(--font-display);
-    font-size: clamp(2rem, 3vw, 3.25rem);
+    font-size: clamp(1.85rem, 2.6vw, 2.75rem);
     font-weight: 400;
     letter-spacing: -0.02em;
     color: var(--oxblood);
@@ -442,7 +469,8 @@ for (const item of items) {
   .endnote {
     min-height: 40svh;
     padding-block: clamp(3rem, 5vw, 4.5rem);
-    border-top: 1px solid var(--stone-3);
+    background: var(--stone-2);
+    border-top: 1px solid var(--stone-4);
     display: flex;
     align-items: center;
     gap: clamp(2rem, 5vw, 4rem);
