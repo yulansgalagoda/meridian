@@ -8,7 +8,6 @@ interface Props {
 
 const { items, categories } = Astro.props;
 
-// Derive available filter values from the actual collection (skip empties)
 function unique(vals: string[]): string[] {
   return [...new Set(vals.filter(Boolean))].sort();
 }
@@ -33,7 +32,7 @@ const groups = [
 <div class="filter-bar" id="filter-bar" aria-label="Filter collection">
   <div class="filter-groups">
     {groups.map((group) => (
-      <div class="filter-group">
+      <div class="filter-group" data-group-key={group.key}>
         <span class="filter-group__label">{group.label}</span>
         <div class="filter-group__pills">
           {group.options.map((opt) => (
@@ -57,14 +56,38 @@ const groups = [
   const bar = document.getElementById('filter-bar');
   if (!bar) throw new Error('FilterBar not found');
 
-  const grid = document.getElementById('item-grid');
   const countEl = document.getElementById('filter-count');
   const cards = Array.from(
     document.querySelectorAll<HTMLElement>('.item-card[data-filter]')
   );
 
-  // Active filters: key → Set of values (OR within a group, AND across groups)
+  // Pre-parse card data once
+  const cardData = cards.map((c) =>
+    JSON.parse(c.dataset.filter ?? '{}') as Record<string, string | string[]>
+  );
+
+  // Active filters: key → Set of values (OR within group, AND across groups)
   const active = new Map<string, Set<string>>();
+
+  function matchesFilters(
+    data: Record<string, string | string[]>,
+    filters: Map<string, Set<string>>
+  ): boolean {
+    return [...filters.entries()].every(([key, vals]) => {
+      const v = data[key];
+      if (Array.isArray(v)) return [...vals].some((fv) => v.includes(fv));
+      return vals.has(String(v ?? ''));
+    });
+  }
+
+  // How many items would be visible if we hypothetically added (key=val)?
+  function countWithOption(key: string, val: string): number {
+    const effective = new Map<string, Set<string>>();
+    active.forEach((vals, k) => effective.set(k, new Set(vals)));
+    if (!effective.has(key)) effective.set(key, new Set());
+    effective.get(key)!.add(val);
+    return cardData.filter((data) => matchesFilters(data, effective)).length;
+  }
 
   function toggle(key: string, val: string) {
     if (!active.has(key)) active.set(key, new Set());
@@ -76,22 +99,42 @@ const groups = [
 
   function applyFilters() {
     let visible = 0;
-    cards.forEach((card) => {
-      const data = JSON.parse(card.dataset.filter ?? '{}') as Record<string, string | string[]>;
-      const passes = [...active.entries()].every(([key, vals]) => {
-        const cardVal = data[key];
-        if (Array.isArray(cardVal)) return [...vals].some((v) => cardVal.includes(v));
-        return vals.has(String(cardVal));
-      });
+    cards.forEach((card, i) => {
+      const passes = active.size === 0 || matchesFilters(cardData[i], active);
       card.hidden = !passes;
-      if (passes) visible++;
+      if (passes) {
+        // Force-reveal items that match — they may not have been scrolled into
+        // view yet so the IntersectionObserver hasn't added is-visible
+        card.classList.add('is-visible');
+        visible++;
+      }
+    });
+    if (countEl) {
+      countEl.textContent =
+        active.size === 0
+          ? ''
+          : `${visible} ${visible === 1 ? 'object' : 'objects'}`;
+    }
+  }
+
+  function updateCascade() {
+    bar!.querySelectorAll<HTMLButtonElement>('.filter-btn').forEach((btn) => {
+      const key = btn.dataset.filterKey!;
+      const val = btn.dataset.filterVal!;
+      const isActive = active.get(key)?.has(val) ?? false;
+      // Always show active buttons so the user can deselect them
+      if (isActive) {
+        btn.hidden = false;
+        return;
+      }
+      btn.hidden = countWithOption(key, val) === 0;
     });
 
-    if (countEl) {
-      countEl.textContent = active.size === 0
-        ? ''
-        : `${visible} ${visible === 1 ? 'object' : 'objects'}`;
-    }
+    // Hide groups where every button is hidden
+    bar!.querySelectorAll<HTMLElement>('.filter-group').forEach((group) => {
+      const btns = [...group.querySelectorAll<HTMLButtonElement>('.filter-btn')];
+      group.hidden = btns.every((b) => b.hidden);
+    });
   }
 
   bar.addEventListener('click', (e) => {
@@ -104,5 +147,6 @@ const groups = [
     btn.classList.toggle('is-active', isActive);
     btn.setAttribute('aria-pressed', String(isActive));
     applyFilters();
+    updateCascade();
   });
 </script>

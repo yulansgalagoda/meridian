@@ -92,7 +92,7 @@ function getFiles(props: AnyProps, name: string): any[] {
 function getRelationIds(props: AnyProps, name: string): string[] {
   const p = props?.[name];
   if (!p) return [];
-  if (p.type === 'relation') return (p.relation as Array<{ id: string }>).map((r) => r.id);
+  if (p.type === 'relation') return (p.relation as Array<{ id: string }>).map((r) => r.id.replace(/-/g, ''));
   // Data sources return relation fields as a JS Array of page URL strings
   let arr: string[] = [];
   if (Array.isArray(p)) {
