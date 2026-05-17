@@ -38,9 +38,9 @@ const segments: Segment[] = TIMELINE_SEGMENTS.reduce<Segment[]>((acc, seg) => {
 const VB_W = 300;
 const VB_H = 400;
 const LINE_X = 148;
-const DOT_R = 5;
-const BRANCH_LEN = 56;
-const PAD_Y = 36;
+const DOT_R = 7;
+const BRANCH_LEN = 62;
+const PAD_Y = 40;
 
 function dotY(year: number, lo: number, hi: number): number {
   if (hi === lo) return VB_H / 2;
@@ -51,9 +51,12 @@ function buildSegmentSVG(seg: Segment): string {
   const lo = seg.from === -Infinity ? seg.items[0].year : seg.from;
   const hi = seg.to === Infinity ? currentYear : seg.to;
 
-  // Era label at top and bottom of line
   const loLabel = lo < 0 ? `${Math.abs(lo)} BCE` : String(lo);
   const hiLabel = hi === currentYear ? String(currentYear) : String(hi);
+
+  // Large watermark year — faint Cormorant behind the spine
+  const wmText = lo === -Infinity ? String(seg.items[0].year) : String(lo);
+  const watermark = `<text x="${VB_W / 2}" y="${VB_H / 2 + 28}" font-family="Cormorant Garamond, Georgia, serif" font-style="italic" font-weight="300" font-size="108" fill="var(--stone-3)" text-anchor="middle" dominant-baseline="middle" pointer-events="none" aria-hidden="true">${wmText}</text>`;
 
   let dots = '';
   seg.items.forEach((item, i) => {
@@ -61,22 +64,24 @@ function buildSegmentSVG(seg: Segment): string {
     const side = i % 2 === 0 ? 1 : -1;
     const bx = LINE_X + side * BRANCH_LEN;
     const anchor = side === 1 ? 'start' : 'end';
-    const labelX = bx + side * 8;
+    const labelX = bx + side * 10;
+    const yearDisp = item.year < 0 ? `${Math.abs(item.year)} BCE` : String(item.year);
 
     dots += `
       <g class="tl-dot" data-slug="${item.slug}" data-name="${item.name.replace(/"/g, '&quot;')}" data-year="${item.year}" style="cursor:pointer">
-        <line x1="${LINE_X}" y1="${y}" x2="${bx}" y2="${y}" stroke="var(--stone-4)" stroke-width="1"/>
-        <circle cx="${bx}" cy="${y}" r="${DOT_R}" fill="var(--stone)" stroke="var(--oxblood)" stroke-width="1.5" class="tl-dot__circle"/>
-        <text x="${labelX}" y="${y + 1}" font-size="12" fill="var(--ink-soft)" dominant-baseline="middle" text-anchor="${anchor}" class="tl-dot__year">${item.year}</text>
+        <line x1="${LINE_X}" y1="${y}" x2="${bx}" y2="${y}" stroke="var(--stone-4)" stroke-width="1" stroke-dasharray="3 2"/>
+        <circle cx="${bx}" cy="${y}" r="${DOT_R}" fill="var(--stone)" stroke="var(--oxblood)" stroke-width="2" class="tl-dot__circle"/>
+        <text x="${labelX}" y="${y + 1}" font-size="12" font-weight="500" fill="var(--ink-mute)" dominant-baseline="middle" text-anchor="${anchor}" font-family="Inter Tight, sans-serif" class="tl-dot__year">${yearDisp}</text>
       </g>`;
   });
 
   return `
-    <text x="${LINE_X}" y="${PAD_Y - 18}" font-size="11" fill="var(--ink-mute)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${loLabel}</text>
-    <line x1="${LINE_X}" y1="${PAD_Y}" x2="${LINE_X}" y2="${VB_H - PAD_Y}" stroke="var(--stone-4)" stroke-width="1.25"/>
-    <circle cx="${LINE_X}" cy="${PAD_Y}" r="2.5" fill="var(--stone-4)"/>
-    <circle cx="${LINE_X}" cy="${VB_H - PAD_Y}" r="2.5" fill="var(--stone-4)"/>
-    <text x="${LINE_X}" y="${VB_H - PAD_Y + 20}" font-size="11" fill="var(--ink-mute)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${hiLabel}</text>
+    ${watermark}
+    <text x="${LINE_X}" y="${PAD_Y - 22}" font-size="10" font-weight="500" fill="var(--ink-faint)" text-anchor="middle" letter-spacing="2" font-family="Inter Tight, sans-serif">${loLabel}</text>
+    <line x1="${LINE_X}" y1="${PAD_Y}" x2="${LINE_X}" y2="${VB_H - PAD_Y}" stroke="var(--ink-faint)" stroke-width="1.5"/>
+    <circle cx="${LINE_X}" cy="${PAD_Y}" r="3" fill="var(--ink-faint)"/>
+    <circle cx="${LINE_X}" cy="${VB_H - PAD_Y}" r="3" fill="var(--ink-faint)"/>
+    <text x="${LINE_X}" y="${VB_H - PAD_Y + 22}" font-size="10" font-weight="500" fill="var(--ink-faint)" text-anchor="middle" letter-spacing="2" font-family="Inter Tight, sans-serif">${hiLabel}</text>
     ${dots}
   `;
 }
@@ -151,14 +156,14 @@ function buildSegmentSVG(seg: Segment): string {
     align-items: baseline;
     justify-content: space-between;
     padding-bottom: var(--sp-4);
-    border-bottom: 1px solid var(--stone-3);
+    border-bottom: 1px solid var(--stone-4);
     margin-bottom: var(--sp-4);
     flex-shrink: 0;
   }
 
   .tl-seg-label {
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 400;
     letter-spacing: -0.01em;
     color: var(--oxblood);
@@ -228,7 +233,7 @@ function buildSegmentSVG(seg: Segment): string {
   }
 
   .tl-dot:hover .tl-dot__circle {
-    r: 7.5;
+    r: 10;
     fill: var(--oxblood-faint);
   }
 

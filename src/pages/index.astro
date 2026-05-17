@@ -44,7 +44,7 @@ for (const item of items) {
     <div class="container home">
 
       <!-- ── Row 1: Introduction + Timeline ───────────────────────────────── -->
-      <section class="hrow" aria-label="Introduction">
+      <section class="hrow hrow--hero" aria-label="Introduction">
         <div class="hrow__left">
           <p class="eyebrow eyebrow--accent">The Meridian</p>
           <h1 class="intro-title">A private archive of antiques and historical objects.</h1>
@@ -190,8 +190,12 @@ for (const item of items) {
     display: grid;
     grid-template-columns: 1fr 400px;
     gap: 0;
-    min-height: 100svh;
     border-top: 1px solid var(--stone-4);
+  }
+
+  /* Hero row takes most of the viewport */
+  .hrow--hero {
+    min-height: clamp(560px, 88svh, 900px);
   }
 
   .hrow__left {
@@ -200,7 +204,7 @@ for (const item of items) {
     flex-direction: column;
     justify-content: center;
     padding-right: clamp(2rem, 4vw, 3.5rem);
-    padding-block: clamp(3rem, 5vw, 4.5rem);
+    padding-block: clamp(4.5rem, 7vw, 6rem);
     border-right: 1px solid var(--stone-4);
   }
 
@@ -210,37 +214,38 @@ for (const item of items) {
     flex-direction: column;
     justify-content: center;
     padding-left: clamp(2rem, 4vw, 3rem);
-    padding-block: clamp(3rem, 5vw, 4.5rem);
+    padding-block: clamp(4.5rem, 7vw, 6rem);
   }
 
   .hrow__right-label {
     margin-bottom: var(--sp-6);
   }
 
-  /* Timeline panel — fills full column height */
+  /* Timeline panel — distinct background, fills full column height */
   .hrow__right--timeline {
     justify-content: flex-start;
     overflow: hidden;
+    background: var(--stone-2);
   }
 
   /* ── Row 1: Introduction ──────────────────────────────────────────────────── */
   .intro-title {
     font-family: var(--font-display);
-    font-size: clamp(2rem, 3.5vw, 3.5rem);
+    font-size: clamp(2.75rem, 5vw, 5.5rem);
     font-weight: 400;
-    line-height: 1.12;
-    letter-spacing: -0.02em;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
     color: var(--ink);
     margin-top: var(--sp-5);
-    max-width: 20ch;
+    max-width: 18ch;
   }
 
   .intro-body {
-    margin-top: clamp(1.25rem, 2vw, 1.75rem);
-    font-size: var(--text-base);
+    margin-top: clamp(1.5rem, 2.5vw, 2rem);
+    font-size: var(--text-lg);
     color: var(--ink-mute);
-    line-height: 1.75;
-    max-width: 52ch;
+    line-height: 1.7;
+    max-width: 48ch;
   }
 
   /* ── Shared CTA link ──────────────────────────────────────────────────────── */
@@ -265,7 +270,7 @@ for (const item of items) {
   /* ── Row 2: Why I collect ─────────────────────────────────────────────────── */
   .why-quote {
     font-family: var(--font-display);
-    font-size: clamp(1.4rem, 2.2vw, 2rem);
+    font-size: clamp(1.5rem, 2.5vw, 2.4rem);
     font-weight: 400;
     line-height: 1.45;
     letter-spacing: -0.01em;
@@ -273,7 +278,7 @@ for (const item of items) {
     margin: 0 0 var(--sp-6);
     padding: 0;
     border: none;
-    max-width: 42ch;
+    max-width: 40ch;
   }
 
   .why-quote::before {
@@ -310,7 +315,7 @@ for (const item of items) {
 
   .stat__val {
     font-family: var(--font-display);
-    font-size: clamp(1.75rem, 2.5vw, 2.5rem);
+    font-size: clamp(2rem, 3vw, 3.25rem);
     font-weight: 400;
     letter-spacing: -0.02em;
     color: var(--oxblood);
@@ -458,6 +463,9 @@ for (const item of items) {
   @media (max-width: 900px) {
     .hrow {
       grid-template-columns: 1fr;
+    }
+
+    .hrow--hero {
       min-height: auto;
     }
 
