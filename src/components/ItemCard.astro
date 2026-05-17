@@ -16,6 +16,10 @@ function slug(s: string): string {
 const metaParts: string[] = [];
 if (item.era) metaParts.push(item.era);
 if (item.originCountry) metaParts.push(item.originCountry);
+
+const yearLabel = item.year !== null
+  ? (item.year < 0 ? `${Math.abs(item.year)} BCE` : String(item.year))
+  : null;
 ---
 
 <a
@@ -38,12 +42,16 @@ if (item.originCountry) metaParts.push(item.originCountry);
         decoding="async"
       />
     ) : (
-      <div class="item-card__image item-card__image--placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <rect x="3" y="3" width="18" height="18" rx="1"/>
-          <path d="M3 15l5-5 4 4 3-3 6 6"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-        </svg>
+      <div class="item-card__placeholder">
+        {yearLabel
+          ? <span class="item-card__placeholder-year">{yearLabel}</span>
+          : <svg class="item-card__placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <rect x="3" y="3" width="18" height="18" rx="1"/>
+              <path d="M3 15l5-5 4 4 3-3 6 6"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+            </svg>
+        }
+        {item.era && <span class="item-card__placeholder-era">{item.era}</span>}
       </div>
     )}
   </div>
