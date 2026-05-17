@@ -67,16 +67,16 @@ function buildSegmentSVG(seg: Segment): string {
       <g class="tl-dot" data-slug="${item.slug}" data-name="${item.name.replace(/"/g, '&quot;')}" data-year="${item.year}" style="cursor:pointer">
         <line x1="${LINE_X}" y1="${y}" x2="${bx}" y2="${y}" stroke="var(--stone-4)" stroke-width="1"/>
         <circle cx="${bx}" cy="${y}" r="${DOT_R}" fill="var(--stone)" stroke="var(--oxblood)" stroke-width="1.5" class="tl-dot__circle"/>
-        <text x="${labelX}" y="${y + 1}" font-size="11" fill="var(--ink-mute)" dominant-baseline="middle" text-anchor="${anchor}" class="tl-dot__year">${item.year}</text>
+        <text x="${labelX}" y="${y + 1}" font-size="12" fill="var(--ink-soft)" dominant-baseline="middle" text-anchor="${anchor}" class="tl-dot__year">${item.year}</text>
       </g>`;
   });
 
   return `
-    <text x="${LINE_X}" y="${PAD_Y - 18}" font-size="10" fill="var(--ink-faint)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${loLabel}</text>
+    <text x="${LINE_X}" y="${PAD_Y - 18}" font-size="11" fill="var(--ink-mute)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${loLabel}</text>
     <line x1="${LINE_X}" y1="${PAD_Y}" x2="${LINE_X}" y2="${VB_H - PAD_Y}" stroke="var(--stone-4)" stroke-width="1.25"/>
     <circle cx="${LINE_X}" cy="${PAD_Y}" r="2.5" fill="var(--stone-4)"/>
     <circle cx="${LINE_X}" cy="${VB_H - PAD_Y}" r="2.5" fill="var(--stone-4)"/>
-    <text x="${LINE_X}" y="${VB_H - PAD_Y + 20}" font-size="10" fill="var(--ink-faint)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${hiLabel}</text>
+    <text x="${LINE_X}" y="${VB_H - PAD_Y + 20}" font-size="11" fill="var(--ink-mute)" text-anchor="middle" letter-spacing="1" font-family="Inter Tight, sans-serif">${hiLabel}</text>
     ${dots}
   `;
 }
@@ -170,7 +170,7 @@ function buildSegmentSVG(seg: Segment): string {
     font-weight: 500;
     letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
-    color: var(--ink-faint);
+    color: var(--ink-mute);
   }
 
   /* Stage clips the sliding SVGs */

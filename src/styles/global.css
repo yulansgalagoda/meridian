@@ -11,8 +11,8 @@
 
   --ink:            #1A1714;
   --ink-soft:       #2E2A27;
-  --ink-mute:       #6E6A65;
-  --ink-faint:      #A8A49F;
+  --ink-mute:       #504C48;
+  --ink-faint:      #7A7672;
 
   --oxblood:        #6B2C39;
   --oxblood-2:      #7D3343;
@@ -244,9 +244,8 @@ h1, h2, h3, h4 {
   margin-top: var(--sp-4);
   padding-top: var(--sp-4);
   border-top: 1px solid var(--stone-3);
-  font-size: 0.6875rem;
+  font-size: var(--text-xs);
   color: var(--ink-faint);
-  opacity: 0.7;
   letter-spacing: 0.01em;
   line-height: 1.6;
 }
