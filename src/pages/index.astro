@@ -4,6 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import ItemCard from '../components/ItemCard.astro';
 import Timeline from '../components/Timeline.astro';
+import CategoryIcon from '../components/CategoryIcon.astro';
 import { getSiteData } from '../lib/notion';
 
 const { items, categories } = await getSiteData();
@@ -144,12 +145,7 @@ for (const item of items) {
                   <li>
                     <a href={`/categories/${cat.slug}`} class="cat-list-item">
                       <span class="cat-list-item__left">
-                        {cat.coverImage
-                          ? <img class="cat-list-item__thumb" src={cat.coverImage} alt={cat.name} loading="lazy" decoding="async" />
-                          : cat.icon
-                            ? <span class="cat-list-item__icon" aria-hidden="true">{cat.icon}</span>
-                            : null
-                        }
+                        <CategoryIcon slug={cat.slug} />
                         <span class="cat-list-item__name">{cat.name}</span>
                       </span>
                       <span class="cat-list-item__count">
@@ -393,12 +389,16 @@ for (const item of items) {
     text-align: center;
   }
 
-  .cat-list-item__thumb {
+  :global(.cat-icon) {
     flex-shrink: 0;
-    width: 5rem;
-    height: 3.75rem;
-    object-fit: cover;
-    display: block;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--ink-faint);
+    transition: color var(--dur-base) var(--ease-io);
+  }
+
+  .cat-list-item:hover :global(.cat-icon) {
+    color: var(--oxblood);
   }
 
   .cat-list-item__name {
