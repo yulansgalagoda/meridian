@@ -406,8 +406,8 @@ h1, h2, h3, h4 {
 }
 
 .item-card--compact .item-card__name {
-  font-size: var(--text-base);
-  line-height: 1.3;
+  font-size: var(--text-lg);
+  line-height: var(--lh-snug);
 }
 
 .item-card--compact .item-card__meta {
