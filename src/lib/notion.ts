@@ -93,19 +93,20 @@ function getRelationIds(props: AnyProps, name: string): string[] {
   const p = props?.[name];
   if (!p) return [];
   if (p.type === 'relation') return (p.relation as Array<{ id: string }>).map((r) => r.id);
-  // Data sources return JSON array of page URLs
-  if (typeof p === 'string') {
-    try {
-      const arr = JSON.parse(p);
-      return arr.map((url: string) => {
-        const parts = url.split('/');
-        const last = parts[parts.length - 1];
-        // Strip any query string
-        return last.split('?')[0].replace(/-/g, '');
-      });
-    } catch { return []; }
+  // Data sources return relation fields as a JS Array of page URL strings
+  let arr: string[] = [];
+  if (Array.isArray(p)) {
+    arr = p;
+  } else if (typeof p === 'string') {
+    try { arr = JSON.parse(p); } catch { return []; }
+  } else {
+    return [];
   }
-  return [];
+  return arr.map((url: string) => {
+    const parts = url.split('/');
+    const last = parts[parts.length - 1];
+    return last.split('?')[0].replace(/-/g, '');
+  });
 }
 
 async function queryDataSource(client: Client, dataSourceId: string): Promise<any[]> {
