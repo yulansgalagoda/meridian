@@ -181,7 +181,7 @@ for (const item of items) {
 <style>
   /* ── Home container ───────────────────────────────────────────────────────── */
   .home {
-    padding-bottom: clamp(3rem, 6vw, 5rem);
+    padding-bottom: 0;
   }
 
   /* ── Shared row layout ────────────────────────────────────────────────────── */
@@ -189,28 +189,36 @@ for (const item of items) {
     display: grid;
     grid-template-columns: 1fr 400px;
     gap: 0;
-    padding-block: clamp(3rem, 5vw, 4.5rem);
+    min-height: 100svh;
     border-top: 1px solid var(--stone-3);
   }
 
   .hrow__left {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     padding-right: clamp(2rem, 4vw, 3.5rem);
+    padding-block: clamp(3rem, 5vw, 4.5rem);
     border-right: 1px solid var(--stone-3);
   }
 
   .hrow__right {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     padding-left: clamp(2rem, 4vw, 3rem);
+    padding-block: clamp(3rem, 5vw, 4.5rem);
   }
 
   .hrow__right-label {
     margin-bottom: var(--sp-6);
   }
 
-  /* Timeline panel — fixed height so SVG has room to scale up */
+  /* Timeline panel — fills full column height */
   .hrow__right--timeline {
-    height: 580px;
-    display: flex;
-    flex-direction: column;
+    justify-content: flex-start;
     overflow: hidden;
   }
 
@@ -400,10 +408,11 @@ for (const item of items) {
 
   /* ── End note ─────────────────────────────────────────────────────────────── */
   .endnote {
+    min-height: 40svh;
     padding-block: clamp(3rem, 5vw, 4.5rem);
     border-top: 1px solid var(--stone-3);
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: clamp(2rem, 5vw, 4rem);
     flex-wrap: wrap;
   }
@@ -422,6 +431,7 @@ for (const item of items) {
   @media (max-width: 900px) {
     .hrow {
       grid-template-columns: 1fr;
+      min-height: auto;
     }
 
     .hrow__left {
@@ -446,6 +456,7 @@ for (const item of items) {
     }
 
     .endnote {
+      min-height: auto;
       flex-direction: column;
       gap: var(--sp-6);
     }
