@@ -34,6 +34,28 @@ const groups = [
 ---
 
 <div class="filter-bar" id="filter-bar" aria-label="Filter collection">
+
+  <!-- Mobile toggle — hidden on desktop -->
+  <button
+    class="filter-toggle"
+    id="filter-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="filter-groups"
+  >
+    <span class="filter-toggle__left">
+      <svg viewBox="0 0 16 12" width="14" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+        <path d="M1 1h14M4 6h8M7 11h2"/>
+      </svg>
+      <span>Filters</span>
+      <span class="filter-toggle__badge" id="filter-toggle-badge"></span>
+    </span>
+    <svg class="filter-toggle__chevron" viewBox="0 0 12 7" width="11" height="7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+      <path d="M1 1l5 5 5-5"/>
+    </svg>
+  </button>
+
+  <!-- Filter groups — always visible on desktop, toggled on mobile -->
   <div class="filter-groups" id="filter-groups">
     {groups.map((group) => (
       <div class="filter-group" data-group-key={group.key}>
@@ -56,8 +78,93 @@ const groups = [
   </div>
 </div>
 
-<!-- Active filter chips — rendered by JS -->
+<!-- Active filter chips — rendered by JS, always visible -->
 <div class="active-filters" id="active-filters" aria-live="polite"></div>
+
+<style>
+  /* Mobile toggle — hidden on desktop */
+  .filter-toggle {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    /* Toggle button */
+    .filter-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: var(--sp-3) var(--sp-4);
+      background: transparent;
+      border: 1px solid var(--stone-4);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: border-color 0.25s ease, background 0.25s ease;
+      margin-bottom: 0;
+    }
+
+    .filter-toggle:hover {
+      border-color: var(--stone-4);
+      background: var(--stone-2);
+    }
+
+    .filter-toggle[aria-expanded="true"] {
+      border-color: var(--ink-faint);
+      background: var(--stone-2);
+    }
+
+    .filter-toggle__left {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+
+    .filter-toggle__badge {
+      display: none;
+      background: var(--oxblood);
+      color: var(--stone);
+      font-size: 0.65rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.2em 0.5em;
+      border-radius: 99px;
+      min-width: 1.3em;
+      text-align: center;
+    }
+
+    .filter-toggle__badge.has-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .filter-toggle__chevron {
+      flex-shrink: 0;
+      color: var(--ink-faint);
+      transition: transform 0.3s ease;
+    }
+
+    .filter-toggle[aria-expanded="true"] .filter-toggle__chevron {
+      transform: rotate(180deg);
+    }
+
+    /* Filter groups hidden by default on mobile */
+    .filter-groups {
+      display: none;
+      padding: var(--sp-5) 0 var(--sp-2);
+      border-top: 1px solid var(--stone-3);
+      margin-top: var(--sp-1);
+    }
+
+    .filter-groups.is-open {
+      display: block;
+    }
+  }
+</style>
 
 <script>
   (function () {
@@ -76,7 +183,24 @@ const groups = [
       condition: new Set(),
     };
 
-    // Returns how many cards match a given filter state
+    // ── Mobile toggle ──────────────────────────────────────────────────────────
+    const filterToggle = document.getElementById('filter-toggle') as HTMLButtonElement | null;
+    const filterGroups = document.getElementById('filter-groups');
+    const filterToggleBadge = document.getElementById('filter-toggle-badge');
+
+    filterToggle?.addEventListener('click', () => {
+      const isOpen = filterGroups?.classList.toggle('is-open') ?? false;
+      filterToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    function updateToggleBadge() {
+      if (!filterToggleBadge) return;
+      const total = Object.values(active).reduce((sum, s) => sum + s.size, 0);
+      filterToggleBadge.textContent = total > 0 ? String(total) : '';
+      filterToggleBadge.classList.toggle('has-count', total > 0);
+    }
+
+    // ── Filter logic ───────────────────────────────────────────────────────────
     function countWith(filters: Record<string, Set<string>>): number {
       let n = 0;
       cards.forEach((card) => {
@@ -94,19 +218,13 @@ const groups = [
       bar!.querySelectorAll<HTMLButtonElement>('.filter-btn').forEach((btn) => {
         const key = btn.dataset.filterKey!;
         const val = btn.dataset.filterVal!;
-        // Always keep active buttons visible (so user can deselect)
-        if (active[key]?.has(val)) {
-          btn.style.display = '';
-          return;
-        }
-        // Hide if adding this option would yield 0 results
+        if (active[key]?.has(val)) { btn.style.display = ''; return; }
         const hypo: Record<string, Set<string>> = {};
         for (const [k, s] of Object.entries(active)) hypo[k] = new Set(s);
         (hypo[key] ??= new Set()).add(val);
         btn.style.display = countWith(hypo) === 0 ? 'none' : '';
       });
 
-      // Hide entire group when all its buttons are hidden
       bar!.querySelectorAll<HTMLElement>('.filter-group').forEach((group) => {
         const btns = [...group.querySelectorAll<HTMLButtonElement>('.filter-btn')];
         group.style.display = btns.every((b) => b.style.display === 'none') ? 'none' : '';
@@ -125,11 +243,7 @@ const groups = [
           if (!cardVals.some((v) => set.has(v))) { passes = false; break; }
         }
         card.style.display = passes ? '' : 'none';
-        if (passes) {
-          // Ensure items are visible even if they haven't been scrolled into view yet
-          card.classList.add('is-visible');
-          visible++;
-        }
+        if (passes) { card.classList.add('is-visible'); visible++; }
       });
 
       if (countEl) {
@@ -139,6 +253,7 @@ const groups = [
       }
 
       updateCascade();
+      updateToggleBadge();
     }
 
     const activeFiltersEl = document.getElementById('active-filters');
@@ -155,6 +270,7 @@ const groups = [
       activeFiltersEl.innerHTML = chips.length
         ? `<div class="active-chips">${chips.join('')}<button class="active-chips__clear" id="clear-all-filters" type="button">Clear all</button></div>`
         : '';
+      updateToggleBadge();
     }
 
     activeFiltersEl?.addEventListener('click', (e) => {
