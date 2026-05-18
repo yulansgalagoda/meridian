@@ -34,6 +34,10 @@ const segments: Segment[] = TIMELINE_SEGMENTS.reduce<Segment[]>((acc, seg) => {
   return acc;
 }, []);
 
+// Start on the most populated segment
+const defaultIdx = segments.reduce((best, seg, idx) =>
+  seg.items.length > segments[best].items.length ? idx : best, 0);
+
 // SVG dimensions
 const VB_W = 300;
 const VB_H = 400;
@@ -88,13 +92,13 @@ function buildSegmentSVG(seg: Segment): string {
 ---
 
 {segments.length > 0 && (
-  <div class="timeline" id="timeline" aria-label="Collection timeline" role="region">
+  <div class="timeline" id="timeline" data-default={defaultIdx} aria-label="Collection timeline" role="region">
 
     <!-- Segment label row -->
     <div class="timeline__header">
-      <span class="tl-seg-label" id="tl-seg-label">{segments[0].label}</span>
+      <span class="tl-seg-label" id="tl-seg-label">{segments[defaultIdx].label}</span>
       <span class="tl-count" id="tl-seg-count">
-        {segments[0].items.length} {segments[0].items.length === 1 ? 'object' : 'objects'}
+        {segments[defaultIdx].items.length} {segments[defaultIdx].items.length === 1 ? 'object' : 'objects'}
       </span>
     </div>
 
@@ -102,7 +106,7 @@ function buildSegmentSVG(seg: Segment): string {
     <div class="timeline__stage" id="tl-stage">
       {segments.map((seg, i) => (
         <svg
-          class={`timeline__svg${i === 0 ? ' is-active' : ' enter-from-below'}`}
+          class={`timeline__svg${i === defaultIdx ? ' is-active' : ' enter-from-below'}`}
           data-index={i}
           data-label={seg.label}
           data-count={seg.items.length}
@@ -123,14 +127,14 @@ function buildSegmentSVG(seg: Segment): string {
     <!-- Navigation -->
     {segments.length > 1 && (
       <div class="timeline__nav">
-        <button class="tl-arrow" id="tl-prev" aria-label="Earlier period" disabled>
+        <button class="tl-arrow" id="tl-prev" aria-label="Earlier period">
           <svg viewBox="0 0 12 7" width="12" height="7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
             <path d="M1 6L6 1l5 5"/>
           </svg>
         </button>
         <span class="tl-nav-dots" id="tl-nav-dots">
           {segments.map((_, i) => (
-            <span class={`tl-nav-dot${i === 0 ? ' is-active' : ''}`} data-goto={i} />
+            <span class={`tl-nav-dot${i === defaultIdx ? ' is-active' : ''}`} data-goto={i} />
           ))}
         </span>
         <button class="tl-arrow" id="tl-next" aria-label="Later period">
@@ -360,7 +364,8 @@ function buildSegmentSVG(seg: Segment): string {
   const nextBtn = document.getElementById('tl-next') as HTMLButtonElement | null;
   const navDots = Array.from(document.querySelectorAll<HTMLElement>('.tl-nav-dot'));
 
-  let current = 0;
+  const defaultIdx = Number(document.getElementById('timeline')?.dataset.default ?? 0);
+  let current = defaultIdx;
   let animating = false;
 
   function goTo(index: number, direction: 'next' | 'prev') {
@@ -452,7 +457,7 @@ function buildSegmentSVG(seg: Segment): string {
     }
   });
 
-  // Init state
-  if (prevBtn) prevBtn.disabled = true;
-  if (nextBtn) nextBtn.disabled = svgs.length <= 1;
+  // Init state based on defaultIdx
+  if (prevBtn) prevBtn.disabled = current === 0;
+  if (nextBtn) nextBtn.disabled = current === svgs.length - 1;
 </script>

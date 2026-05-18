@@ -196,11 +196,12 @@ for (const item of items) {
     border-top: 1px solid var(--stone-4);
   }
 
-  /* Hero row takes most of the viewport */
+  /* Hero row takes most of the viewport — no border-top, header is same dark bg */
   .hrow--hero {
     min-height: clamp(560px, 88svh, 900px);
     display: flex;
     flex-direction: column;
+    border-top: none;
   }
 
   /* ── Inner container — max-width grid inside each row ────────────────────── */
@@ -265,8 +266,9 @@ for (const item of items) {
   /* Row 2 — near-white cream */
   .hrow--light { background: var(--stone); }
 
-  /* Row 3 — warm cream */
+  /* Row 3 — warm cream; categories start from top, not centered */
   .hrow--mid   { background: var(--stone-2); }
+  .hrow--mid .hrow__right { justify-content: flex-start; }
 
   /* Timeline panel — slightly distinct from main dark column */
   .hrow__right--timeline {
@@ -492,7 +494,6 @@ for (const item of items) {
 
   /* ── End note ─────────────────────────────────────────────────────────────── */
   .endnote {
-    min-height: 40svh;
     background: var(--stone-3);
     border-top: 1px solid var(--stone-4);
   }
@@ -501,8 +502,7 @@ for (const item of items) {
     max-width: var(--container);
     margin-inline: auto;
     padding-inline: var(--sp-6);
-    padding-block: clamp(3rem, 5vw, 4.5rem);
-    min-height: inherit;
+    padding-block: clamp(5rem, 9vw, 8rem);
     display: flex;
     align-items: center;
     gap: clamp(2rem, 5vw, 4rem);
