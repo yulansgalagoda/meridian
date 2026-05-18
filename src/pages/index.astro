@@ -221,28 +221,41 @@ for (const item of items) {
     margin-bottom: var(--sp-6);
   }
 
-  /* Row tone variants */
+  /* ── Row tone variants ────────────────────────────────────────────────────── */
+
+  /* Row 1 — dark charcoal hero */
   .hrow--dark {
-    background: var(--stone-3);
+    background: var(--dark);
+    border-top-color: var(--dark-3);
+    /* Re-map stone tokens so Timeline SVG auto-adapts to dark background */
+    --stone:   var(--on-dark);   /* dot fill → cream on dark */
+    --stone-3: #2C251D;          /* watermark nearly invisible */
+    --stone-4: #3D3529;          /* branch dashes very subtle */
+    --ink-faint: #8E8880;        /* spine/labels readable on dark */
   }
 
   .hrow--dark .hrow__left {
-    border-right-color: var(--stone-4);
+    border-right-color: var(--dark-3);
   }
 
+  /* Hero text: cream on charcoal */
+  .hrow--dark .intro-title  { color: var(--on-dark); }
+  .hrow--dark .intro-body   { color: var(--on-dark-mute); }
+  .hrow--dark .eyebrow--accent { color: var(--oxblood-light); }
+  .hrow--dark .text-cta     { color: var(--oxblood-light); }
+  .hrow--dark .text-cta:hover { color: #D4A0AA; gap: calc(var(--sp-3) + 5px); }
+
+  /* Row 2 — near-white cream */
   .hrow--light {
-    background: var(--surface);
+    background: var(--stone);
   }
 
-  .hrow--light .hrow__left {
-    border-right-color: var(--stone-3);
-  }
-
+  /* Row 3 — warm cream */
   .hrow--mid {
     background: var(--stone-2);
   }
 
-  /* Timeline panel — distinct background, fills full column height */
+  /* Timeline panel — distinct from the rest of the dark column */
   .hrow__right--timeline {
     justify-content: flex-start;
     overflow: hidden;
@@ -250,9 +263,8 @@ for (const item of items) {
     padding-right: clamp(1.5rem, 3vw, 2.5rem);
   }
 
-  /* On dark row, timeline panel is darker still */
   .hrow--dark .hrow__right--timeline {
-    background: var(--stone-4);
+    background: var(--dark-2);
   }
 
   /* ── Row 1: Introduction ──────────────────────────────────────────────────── */
@@ -469,7 +481,7 @@ for (const item of items) {
   .endnote {
     min-height: 40svh;
     padding-block: clamp(3rem, 5vw, 4.5rem);
-    background: var(--stone-2);
+    background: var(--stone-3);
     border-top: 1px solid var(--stone-4);
     display: flex;
     align-items: center;

@@ -3,22 +3,36 @@
 
 /* ── Tokens ─────────────────────────────────────────────────────────────────── */
 :root {
-  /* Colour — Museum Stone */
-  --stone:          #EDEAE5;
-  --stone-2:        #E5E2DC;
-  --stone-3:        #D8D4CD;
-  --stone-4:        #C9C4BC;
+  /* Colour — Cream & Charcoal */
 
+  /* Light surfaces — cream / parchment */
+  --stone:          #FEFCF8;   /* near-white cream, primary background */
+  --stone-2:        #F5F0E8;   /* warm cream, tinted sections */
+  --stone-3:        #EDE4D3;   /* parchment, deeper accent */
+  --stone-4:        #C4B8A5;   /* warm taupe, borders & dividers */
+
+  /* Dark surfaces — hero / footer */
+  --dark:           #1C1814;   /* near-black charcoal */
+  --dark-2:         #27211A;   /* slightly lighter dark */
+  --dark-3:         #373028;   /* dark border */
+
+  /* Text on dark backgrounds */
+  --on-dark:        #EDE8DE;
+  --on-dark-mute:   rgba(237, 232, 222, 0.58);
+
+  /* Ink — text on cream */
   --ink:            #1A1714;
-  --ink-soft:       #2E2A27;
-  --ink-mute:       #504C48;
-  --ink-faint:      #7A7672;
+  --ink-soft:       #2D2921;
+  --ink-mute:       #524D47;
+  --ink-faint:      #7C7570;
 
+  /* Oxblood accent */
   --oxblood:        #6B2C39;
   --oxblood-2:      #7D3343;
-  --oxblood-faint:  rgba(107, 44, 57, 0.07);
+  --oxblood-light:  #C08A95;   /* oxblood readable on dark backgrounds */
+  --oxblood-faint:  rgba(107, 44, 57, 0.08);
 
-  --surface:        #F2EFEA;
+  --surface:        #FFFFFF;
 
   /* Typography */
   --font-display: "Cormorant Garamond", "Garamond", Georgia, serif;
@@ -213,10 +227,10 @@ h1, h2, h3, h4 {
 
 /* ── Footer ─────────────────────────────────────────────────────────────────── */
 .site-footer {
-  border-top: 1px solid var(--stone-4);
+  background: var(--dark);
+  border-top: 1px solid var(--dark-3);
   padding-block: var(--sp-10);
   margin-top: auto;
-  background: var(--stone-3);
 }
 
 .site-footer__inner {
@@ -231,22 +245,24 @@ h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-size: var(--text-base);
   font-weight: 400;
-  color: var(--ink-soft);
+  color: var(--on-dark);
   text-decoration: none;
+  transition: color var(--dur-base) var(--ease-io);
 }
+.site-footer__name:hover { color: var(--oxblood-light); }
 
 .site-footer__meta {
   font-size: var(--text-xs);
-  color: var(--ink-faint);
+  color: rgba(237, 232, 222, 0.45);
   letter-spacing: 0.01em;
 }
 
 .site-footer__credit {
   margin-top: var(--sp-4);
   padding-top: var(--sp-4);
-  border-top: 1px solid var(--stone-4);
+  border-top: 1px solid var(--dark-3);
   font-size: var(--text-xs);
-  color: var(--ink-faint);
+  color: rgba(237, 232, 222, 0.32);
   letter-spacing: 0.01em;
   line-height: 1.6;
 }
