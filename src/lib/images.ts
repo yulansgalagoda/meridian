@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import sharp from 'sharp';
 
 const IMAGES_DIR = path.join(process.cwd(), 'public', 'images');
 
@@ -11,8 +12,11 @@ async function download(url: string, dest: string): Promise<void> {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = await res.arrayBuffer();
-    fs.writeFileSync(dest, Buffer.from(buf));
+    const buf = Buffer.from(await res.arrayBuffer());
+    // Auto-rotate pixels to match EXIF orientation, then strip the flag.
+    // This fixes images that appear rotated because the device stored them
+    // portrait-pixels + "rotate 90°" EXIF, which CDNs often strip.
+    await sharp(buf).rotate().toFile(dest);
   } catch (e) {
     console.warn(`[meridian] Could not download image: ${url}`, e);
   }
