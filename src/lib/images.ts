@@ -1,3 +1,4 @@
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import sharp from 'sharp';
@@ -8,23 +9,31 @@ export function ensureImagesDir(): void {
   fs.mkdirSync(IMAGES_DIR, { recursive: true });
 }
 
-async function download(url: string, dest: string): Promise<void> {
+/**
+ * Download, EXIF-rotate, and save an image.
+ * Returns the final filename (with content hash) so the caller can build the URL.
+ * Using a content hash in the filename means any image replacement automatically
+ * produces a new URL — busting every cache layer (CDN, browser) without manual purging.
+ */
+async function download(url: string, prefix: string): Promise<string | null> {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    // Auto-rotate pixels to match EXIF orientation, then strip the flag.
-    // This fixes images that appear rotated because the device stored them
-    // portrait-pixels + "rotate 90°" EXIF, which CDNs often strip.
-    await sharp(buf).rotate().toFile(dest);
+    const raw = Buffer.from(await res.arrayBuffer());
+
+    // Auto-rotate pixels to match EXIF orientation, output as JPEG.
+    const processed = await sharp(raw).rotate().jpeg({ quality: 88 }).toBuffer();
+
+    // 8-char content hash → new image = new filename = cache bust everywhere.
+    const hash = crypto.createHash('md5').update(processed).digest('hex').slice(0, 8);
+    const filename = `${prefix}-${hash}.jpg`;
+
+    fs.writeFileSync(path.join(IMAGES_DIR, filename), processed);
+    return `/images/${filename}`;
   } catch (e) {
     console.warn(`[meridian] Could not download image: ${url}`, e);
+    return null;
   }
-}
-
-function extFromUrl(url: string): string {
-  const raw = url.split('?')[0].split('.').pop()?.toLowerCase() ?? 'jpg';
-  return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(raw) ? raw : 'jpg';
 }
 
 function extractUrl(file: any): string | null {
@@ -34,7 +43,6 @@ function extractUrl(file: any): string | null {
   return null;
 }
 
-// Always re-downloads — no existence check. Every build pulls fresh images.
 export async function downloadPrimary(
   slug: string,
   files: any[]
@@ -42,10 +50,7 @@ export async function downloadPrimary(
   if (!files?.length) return null;
   const url = extractUrl(files[0]);
   if (!url) return null;
-  const ext = extFromUrl(url);
-  const filename = `${slug}-primary.${ext}`;
-  await download(url, path.join(IMAGES_DIR, filename));
-  return `/images/${filename}`;
+  return download(url, `${slug}-primary`);
 }
 
 export async function downloadGallery(
@@ -57,10 +62,8 @@ export async function downloadGallery(
   for (let i = 0; i < files.length; i++) {
     const url = extractUrl(files[i]);
     if (!url) continue;
-    const ext = extFromUrl(url);
-    const filename = `${slug}-gallery-${i}.${ext}`;
-    await download(url, path.join(IMAGES_DIR, filename));
-    paths.push(`/images/${filename}`);
+    const result = await download(url, `${slug}-gallery-${i}`);
+    if (result) paths.push(result);
   }
   return paths;
 }
@@ -72,8 +75,5 @@ export async function downloadCategoryImage(
   if (!files?.length) return null;
   const url = extractUrl(files[0]);
   if (!url) return null;
-  const ext = extFromUrl(url);
-  const filename = `category-${slug}.${ext}`;
-  await download(url, path.join(IMAGES_DIR, filename));
-  return `/images/${filename}`;
+  return download(url, `category-${slug}`);
 }
