@@ -46,12 +46,8 @@ for (const item of items) {
     <section class="hrow hrow--hero hrow--dark" aria-label="Introduction">
       <div class="hrow__inner">
         <div class="hrow__left">
-          <p class="eyebrow eyebrow--accent">The Meridian</p>
-          <h1 class="intro-title">A private Archive of History.</h1>
-          <p class="intro-body">
-            Objects acquired, studied, and documented. Each one a fixed point
-            on the long line from the first tools to the present day.
-          </p>
+          <h1 class="intro-title">A private Archive<br>of History.</h1>
+          <p class="intro-byline">Curated by Yulan Galagoda</p>
           <a href="/collection" class="text-cta">
             Browse the collection
             <svg viewBox="0 0 16 10" width="13" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -221,7 +217,7 @@ for (const item of items) {
     flex-direction: column;
     justify-content: center;
     padding-right: clamp(2rem, 4vw, 3.5rem);
-    padding-block: clamp(4.5rem, 7vw, 6rem);
+    padding-block: clamp(5.5rem, 9vw, 8rem);
     border-right: 1px solid var(--stone-4);
   }
 
@@ -231,7 +227,7 @@ for (const item of items) {
     flex-direction: column;
     justify-content: center;
     padding-left: clamp(2rem, 4vw, 3rem);
-    padding-block: clamp(4.5rem, 7vw, 6rem);
+    padding-block: clamp(5.5rem, 9vw, 8rem);
   }
 
   .hrow__right-label {
@@ -246,9 +242,10 @@ for (const item of items) {
     border-top-color: var(--dark-3);
     /* Override tokens so Timeline SVG auto-adapts on dark background */
     --stone:     var(--on-dark);
-    --stone-3:   #2C251D;
-    --stone-4:   #3D3529;
-    --ink-faint: #8E8880;
+    --stone-3:   #3A3028;
+    --stone-4:   rgba(237,232,222,0.22);
+    --ink-faint: rgba(237,232,222,0.45);
+    --ink-mute:  rgba(237,232,222,0.65);
   }
 
   .hrow--dark .hrow__left {
@@ -257,7 +254,7 @@ for (const item of items) {
 
   /* All text in the dark hero becomes cream */
   .hrow--dark .intro-title    { color: var(--on-dark); }
-  .hrow--dark .intro-body     { color: var(--on-dark-mute); }
+  .hrow--dark .intro-byline   { color: rgba(237,232,222,0.55); }
   .hrow--dark .eyebrow        { color: rgba(237,232,222,0.5); }
   .hrow--dark .eyebrow--accent { color: var(--oxblood-light); }
   .hrow--dark .text-cta       { color: var(--oxblood-light); }
@@ -294,12 +291,11 @@ for (const item of items) {
     max-width: 20ch;
   }
 
-  .intro-body {
-    margin-top: clamp(1.5rem, 2.5vw, 2rem);
-    font-size: var(--text-lg);
+  .intro-byline {
+    margin-top: var(--sp-4);
+    font-size: var(--text-base);
     color: var(--ink-mute);
-    line-height: 1.7;
-    max-width: 48ch;
+    letter-spacing: 0.01em;
   }
 
   /* ── Shared CTA link ──────────────────────────────────────────────────────── */
