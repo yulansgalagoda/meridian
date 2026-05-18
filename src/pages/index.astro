@@ -40,11 +40,11 @@ for (const item of items) {
 >
   <Header />
 
-  <main>
-    <div class="container home">
+  <main class="home">
 
-      <!-- ── Row 1: Introduction + Timeline ───────────────────────────────── -->
-      <section class="hrow hrow--hero hrow--dark" aria-label="Introduction">
+    <!-- ── Row 1: Introduction + Timeline ─────────────────────────────────── -->
+    <section class="hrow hrow--hero hrow--dark" aria-label="Introduction">
+      <div class="hrow__inner">
         <div class="hrow__left">
           <p class="eyebrow eyebrow--accent">The Meridian</p>
           <h1 class="intro-title">A private Archive of History.</h1>
@@ -62,10 +62,12 @@ for (const item of items) {
         <aside class="hrow__right hrow__right--timeline" aria-label="Collection timeline">
           <Timeline items={items} />
         </aside>
-      </section>
+      </div>
+    </section>
 
-      <!-- ── Row 2: Why I Collect + Stats ─────────────────────────────────── -->
-      <section class="hrow hrow--light" aria-label="Why I collect">
+    <!-- ── Row 2: Why I Collect + Stats ───────────────────────────────────── -->
+    <section class="hrow hrow--light" aria-label="Why I collect">
+      <div class="hrow__inner">
         <div class="hrow__left">
           <p class="eyebrow eyebrow--muted">Why I collect</p>
           <blockquote class="why-quote">
@@ -117,11 +119,13 @@ for (const item of items) {
             )}
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- ── Row 3: Featured items + Categories ───────────────────────────── -->
-      {(displayItems.length > 0 || categories.length > 0) && (
-        <section class="hrow hrow--mid" aria-label="Featured and categories">
+    <!-- ── Row 3: Featured items + Categories ─────────────────────────────── -->
+    {(displayItems.length > 0 || categories.length > 0) && (
+      <section class="hrow hrow--mid" aria-label="Featured and categories">
+        <div class="hrow__inner">
           {displayItems.length > 0 && (
             <div class="hrow__left">
               <div class="row-header">
@@ -157,11 +161,13 @@ for (const item of items) {
               </ul>
             </div>
           )}
-        </section>
-      )}
+        </div>
+      </section>
+    )}
 
-      <!-- ── End note ──────────────────────────────────────────────────────── -->
-      <div class="endnote">
+    <!-- ── End note ────────────────────────────────────────────────────────── -->
+    <div class="endnote">
+      <div class="endnote__inner">
         <p class="endnote__text">
           The archive grows slowly, by design. New objects are added as they find their way here.
         </p>
@@ -172,30 +178,40 @@ for (const item of items) {
           </svg>
         </a>
       </div>
-
     </div>
+
   </main>
 
   <Footer itemCount={items.length} />
 </Base>
 
 <style>
-  /* ── Home container ───────────────────────────────────────────────────────── */
+  /* ── Home wrapper ────────────────────────────────────────────────────────── */
   .home {
-    padding-bottom: 0;
+    display: block;
   }
 
-  /* ── Shared row layout ────────────────────────────────────────────────────── */
+  /* ── Full-width row — carries background + border ────────────────────────── */
   .hrow {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 0;
     border-top: 1px solid var(--stone-4);
   }
 
   /* Hero row takes most of the viewport */
   .hrow--hero {
     min-height: clamp(560px, 88svh, 900px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Inner container — max-width grid inside each row ────────────────────── */
+  .hrow__inner {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 0;
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--sp-6);
+    flex: 1;
   }
 
   .hrow__left {
@@ -223,39 +239,36 @@ for (const item of items) {
 
   /* ── Row tone variants ────────────────────────────────────────────────────── */
 
-  /* Row 1 — dark charcoal hero */
+  /* Row 1 — dark charcoal */
   .hrow--dark {
     background: var(--dark);
     border-top-color: var(--dark-3);
-    /* Re-map stone tokens so Timeline SVG auto-adapts to dark background */
-    --stone:   var(--on-dark);   /* dot fill → cream on dark */
-    --stone-3: #2C251D;          /* watermark nearly invisible */
-    --stone-4: #3D3529;          /* branch dashes very subtle */
-    --ink-faint: #8E8880;        /* spine/labels readable on dark */
+    /* Override tokens so Timeline SVG auto-adapts on dark background */
+    --stone:     var(--on-dark);
+    --stone-3:   #2C251D;
+    --stone-4:   #3D3529;
+    --ink-faint: #8E8880;
   }
 
   .hrow--dark .hrow__left {
     border-right-color: var(--dark-3);
   }
 
-  /* Hero text: cream on charcoal */
-  .hrow--dark .intro-title  { color: var(--on-dark); }
-  .hrow--dark .intro-body   { color: var(--on-dark-mute); }
+  /* All text in the dark hero becomes cream */
+  .hrow--dark .intro-title    { color: var(--on-dark); }
+  .hrow--dark .intro-body     { color: var(--on-dark-mute); }
+  .hrow--dark .eyebrow        { color: rgba(237,232,222,0.5); }
   .hrow--dark .eyebrow--accent { color: var(--oxblood-light); }
-  .hrow--dark .text-cta     { color: var(--oxblood-light); }
-  .hrow--dark .text-cta:hover { color: #D4A0AA; gap: calc(var(--sp-3) + 5px); }
+  .hrow--dark .text-cta       { color: var(--oxblood-light); }
+  .hrow--dark .text-cta:hover { color: #D4A0AA; }
 
   /* Row 2 — near-white cream */
-  .hrow--light {
-    background: var(--stone);
-  }
+  .hrow--light { background: var(--stone); }
 
   /* Row 3 — warm cream */
-  .hrow--mid {
-    background: var(--stone-2);
-  }
+  .hrow--mid   { background: var(--stone-2); }
 
-  /* Timeline panel — distinct from the rest of the dark column */
+  /* Timeline panel — slightly distinct from main dark column */
   .hrow__right--timeline {
     justify-content: flex-start;
     overflow: hidden;
@@ -480,9 +493,16 @@ for (const item of items) {
   /* ── End note ─────────────────────────────────────────────────────────────── */
   .endnote {
     min-height: 40svh;
-    padding-block: clamp(3rem, 5vw, 4.5rem);
     background: var(--stone-3);
     border-top: 1px solid var(--stone-4);
+  }
+
+  .endnote__inner {
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--sp-6);
+    padding-block: clamp(3rem, 5vw, 4.5rem);
+    min-height: inherit;
     display: flex;
     align-items: center;
     gap: clamp(2rem, 5vw, 4rem);
@@ -501,7 +521,7 @@ for (const item of items) {
 
   /* ── Responsive ──────────────────────────────────────────────────────────── */
   @media (max-width: 900px) {
-    .hrow {
+    .hrow__inner {
       grid-template-columns: 1fr;
     }
 
@@ -530,7 +550,7 @@ for (const item of items) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .endnote {
+    .endnote__inner {
       min-height: auto;
       flex-direction: column;
       gap: var(--sp-6);
