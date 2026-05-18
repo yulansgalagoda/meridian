@@ -218,7 +218,7 @@ h1, h2, h3, h4 {
   font-size: var(--text-sm);
   font-weight: 500;
   letter-spacing: 0.01em;
-  color: rgba(237, 232, 222, 0.55);
+  color: rgba(237, 232, 222, 0.72);
   text-decoration: none;
   transition: color var(--dur-base) var(--ease-io);
 }
@@ -493,7 +493,7 @@ h1, h2, h3, h4 {
   align-items: center;
   padding: 0.2rem 0.7rem;
   background: transparent;
-  border: 1px solid var(--stone-3);
+  border: 1px solid var(--stone-4);
   font-family: var(--font-body);
   font-size: var(--text-xs);
   font-weight: 500;
@@ -522,6 +522,61 @@ h1, h2, h3, h4 {
   font-size: var(--text-sm);
   color: var(--ink-faint);
   margin-bottom: var(--sp-6);
+}
+
+.active-filters {
+  margin-bottom: var(--sp-6);
+}
+
+.active-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.active-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0.2rem 0.65rem;
+  background: var(--oxblood);
+  border: 1px solid var(--oxblood);
+  color: var(--stone);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-io);
+}
+
+.active-chip:hover {
+  background: var(--oxblood-2);
+  border-color: var(--oxblood-2);
+}
+
+.active-chip span {
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
+.active-chips__clear {
+  padding: 0.2rem 0.65rem;
+  background: transparent;
+  border: 1px solid var(--stone-4);
+  color: var(--ink-faint);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color var(--dur-base) var(--ease-io), border-color var(--dur-base) var(--ease-io);
+}
+
+.active-chips__clear:hover {
+  color: var(--ink);
+  border-color: var(--stone-4);
 }
 
 /* ── Page heading ───────────────────────────────────────────────────────────── */

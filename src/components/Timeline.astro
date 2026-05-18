@@ -127,17 +127,20 @@ function buildSegmentSVG(seg: Segment): string {
     <!-- Navigation -->
     {segments.length > 1 && (
       <div class="timeline__nav">
-        <button class="tl-arrow" id="tl-prev" aria-label="Earlier period">
+        <button class="tl-arrow" id="tl-prev" aria-label="Earlier period" title="Earlier era">
           <svg viewBox="0 0 12 7" width="12" height="7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
             <path d="M1 6L6 1l5 5"/>
           </svg>
         </button>
-        <span class="tl-nav-dots" id="tl-nav-dots">
-          {segments.map((_, i) => (
-            <span class={`tl-nav-dot${i === defaultIdx ? ' is-active' : ''}`} data-goto={i} />
-          ))}
-        </span>
-        <button class="tl-arrow" id="tl-next" aria-label="Later period">
+        <div class="tl-nav-center">
+          <p class="tl-nav-hint">Navigate eras</p>
+          <span class="tl-nav-dots" id="tl-nav-dots">
+            {segments.map((seg, i) => (
+              <span class={`tl-nav-dot${i === defaultIdx ? ' is-active' : ''}`} data-goto={i} title={seg.label} />
+            ))}
+          </span>
+        </div>
+        <button class="tl-arrow" id="tl-next" aria-label="Later period" title="Later era">
           <svg viewBox="0 0 12 7" width="12" height="7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
             <path d="M1 1l5 5 5-5"/>
           </svg>
@@ -295,30 +298,58 @@ function buildSegmentSVG(seg: Segment): string {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: var(--sp-4);
-    border-top: 1px solid var(--stone-3);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--stone-4);
     margin-top: var(--sp-4);
     flex-shrink: 0;
+    gap: var(--sp-3);
+  }
+
+  .tl-nav-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+    flex: 1;
+  }
+
+  .tl-nav-hint {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
+  }
+
+  .tl-nav-hint.is-visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .tl-arrow {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    background: none;
-    border: 1px solid var(--stone-3);
-    color: var(--ink-faint);
+    width: 2.75rem;
+    height: 2.75rem;
+    background: rgba(237, 232, 222, 0.06);
+    border: 1px solid var(--stone-4);
+    color: var(--ink-mute);
     cursor: pointer;
     transition:
+      background 0.4s var(--ease-io),
       border-color 0.4s var(--ease-io),
-      color 0.4s var(--ease-io);
+      color 0.4s var(--ease-io),
+      transform 0.3s var(--ease-out);
   }
 
   .tl-arrow:hover {
-    border-color: var(--stone-4);
-    color: var(--ink-mute);
+    background: rgba(237, 232, 222, 0.12);
+    border-color: var(--oxblood-light);
+    color: var(--oxblood-light);
   }
 
   .tl-arrow:disabled {
@@ -327,15 +358,26 @@ function buildSegmentSVG(seg: Segment): string {
     pointer-events: none;
   }
 
+  @keyframes tl-pulse {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.15); }
+    70%  { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+
+  .tl-arrow.pulse {
+    animation: tl-pulse 0.55s var(--ease-out) forwards;
+  }
+
   .tl-nav-dots {
     display: flex;
-    gap: var(--sp-2);
+    gap: var(--sp-3);
     align-items: center;
   }
 
   .tl-nav-dot {
-    width: 5px;
-    height: 5px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--stone-4);
     cursor: pointer;
@@ -344,9 +386,14 @@ function buildSegmentSVG(seg: Segment): string {
       transform 0.4s var(--ease-io);
   }
 
+  .tl-nav-dot:hover {
+    background: var(--oxblood-light);
+    transform: scale(1.3);
+  }
+
   .tl-nav-dot.is-active {
-    background: var(--oxblood);
-    transform: scale(1.4);
+    background: var(--oxblood-light);
+    transform: scale(1.5);
   }
 </style>
 
@@ -460,4 +507,16 @@ function buildSegmentSVG(seg: Segment): string {
   // Init state based on defaultIdx
   if (prevBtn) prevBtn.disabled = current === 0;
   if (nextBtn) nextBtn.disabled = current === svgs.length - 1;
+
+  // Reveal "Navigate eras" hint + pulse next arrow after a brief delay
+  const hint = document.querySelector<HTMLElement>('.tl-nav-hint');
+  if (hint && nextBtn && !nextBtn.disabled) {
+    setTimeout(() => {
+      hint.classList.add('is-visible');
+      nextBtn.classList.add('pulse');
+      nextBtn.addEventListener('animationend', () => nextBtn.classList.remove('pulse'), { once: true });
+    }, 1800);
+  } else if (hint) {
+    setTimeout(() => hint.classList.add('is-visible'), 1800);
+  }
 </script>

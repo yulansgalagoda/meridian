@@ -56,6 +56,9 @@ const groups = [
   </div>
 </div>
 
+<!-- Active filter chips — rendered by JS -->
+<div class="active-filters" id="active-filters" aria-live="polite"></div>
+
 <script>
   (function () {
     const bar = document.getElementById('filter-bar');
@@ -138,6 +141,44 @@ const groups = [
       updateCascade();
     }
 
+    const activeFiltersEl = document.getElementById('active-filters');
+
+    function renderActiveChips() {
+      if (!activeFiltersEl) return;
+      const chips: string[] = [];
+      bar!.querySelectorAll<HTMLButtonElement>('.filter-btn.is-active').forEach((btn) => {
+        const key = btn.dataset.filterKey!;
+        const val = btn.dataset.filterVal!;
+        const label = btn.textContent?.trim() ?? val;
+        chips.push(`<button class="active-chip" data-clear-key="${key}" data-clear-val="${val}" type="button">${label} <span aria-hidden="true">×</span></button>`);
+      });
+      activeFiltersEl.innerHTML = chips.length
+        ? `<div class="active-chips">${chips.join('')}<button class="active-chips__clear" id="clear-all-filters" type="button">Clear all</button></div>`
+        : '';
+    }
+
+    activeFiltersEl?.addEventListener('click', (e) => {
+      const chip = (e.target as Element).closest<HTMLButtonElement>('.active-chip');
+      if (chip) {
+        const key = chip.dataset.clearKey!;
+        const val = chip.dataset.clearVal!;
+        active[key].delete(val);
+        const filterBtn = bar!.querySelector<HTMLButtonElement>(`[data-filter-key="${key}"][data-filter-val="${val}"]`);
+        if (filterBtn) { filterBtn.classList.remove('is-active'); filterBtn.setAttribute('aria-pressed', 'false'); }
+        applyFilters();
+        renderActiveChips();
+        return;
+      }
+      if ((e.target as Element).id === 'clear-all-filters') {
+        Object.keys(active).forEach((k) => active[k].clear());
+        bar!.querySelectorAll<HTMLButtonElement>('.filter-btn.is-active').forEach((b) => {
+          b.classList.remove('is-active'); b.setAttribute('aria-pressed', 'false');
+        });
+        applyFilters();
+        renderActiveChips();
+      }
+    });
+
     bar.addEventListener('click', (e) => {
       const btn = (e.target as Element).closest<HTMLButtonElement>('.filter-btn');
       if (!btn) return;
@@ -149,6 +190,7 @@ const groups = [
       btn.classList.toggle('is-active', isActive);
       btn.setAttribute('aria-pressed', String(isActive));
       applyFilters();
+      renderActiveChips();
     });
   })();
 </script>
