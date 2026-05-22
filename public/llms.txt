@@ -1,0 +1,31 @@
+# The Meridian
+
+> A private archive of antiques and historical objects, curated by Yulan Galagoda.
+
+## About
+
+The Meridian is a personal collection of rare and historically significant objects
+spanning 1590 to the present. Each piece is documented with provenance, condition
+notes, origin country, era classification, and curatorial commentary.
+
+The archive is built and maintained as a static website backed by a private Notion
+database. It is not a shop — nothing is for sale. It is a record.
+
+## Collection
+
+The collection currently holds objects across multiple categories including
+antique maps, scientific instruments, historical documents, and ephemera.
+Objects can be browsed, filtered by era, origin, condition, category, and tag,
+or explored individually with full detail and gallery images.
+
+- Full catalogue: https://meridian.yulan.me/collection
+- Browse by category: https://meridian.yulan.me/categories
+- About the archive: https://meridian.yulan.me/about
+
+## Curator
+
+Yulan Galagoda — collector, designer.
+
+## Contact
+
+https://yulan.me

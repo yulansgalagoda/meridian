@@ -45,6 +45,32 @@ const url = canonical ?? Astro.url.href;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <slot name="head" />
+
+    <!-- WebMCP: register site context for browser-based AI agents -->
+    <script>
+      if (typeof navigator !== 'undefined' && 'modelContext' in navigator) {
+        (navigator as any).modelContext.provideContext({
+          name: 'The Meridian',
+          description: 'A private archive of antiques and historical objects spanning 1590 to the present, curated by Yulan Galagoda.',
+          tools: [
+            {
+              name: 'get_overview',
+              description: 'Returns a summary of The Meridian archive including its purpose, curator, and collection scope.',
+              run: () => ({
+                name: 'The Meridian',
+                curator: 'Yulan Galagoda',
+                description: 'A private archive of antiques and historical objects spanning 1590 to the present.',
+                url: 'https://meridian.yulan.me',
+                collection: 'https://meridian.yulan.me/collection',
+                categories: 'https://meridian.yulan.me/categories',
+                about: 'https://meridian.yulan.me/about',
+                llms: 'https://meridian.yulan.me/llms.txt',
+              }),
+            },
+          ],
+        });
+      }
+    </script>
   </head>
   <body>
     <slot />

@@ -2,9 +2,22 @@
 /images/*
   Cache-Control: public, max-age=31536000, immutable
 
-# HTML pages must always be fresh
+# HTML pages must always be fresh — also advertise discovery endpoints
 /*.html
   Cache-Control: no-cache
+  Link: <https://meridian.yulan.me/sitemap-index.xml>; rel="sitemap", <https://meridian.yulan.me/.well-known/api-catalog>; rel="api-catalog"
 
 /
   Cache-Control: no-cache
+  Link: <https://meridian.yulan.me/sitemap-index.xml>; rel="sitemap", <https://meridian.yulan.me/.well-known/api-catalog>; rel="api-catalog"
+
+# .well-known — serve with correct content types
+/.well-known/api-catalog
+  Content-Type: application/linkset+json; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/.well-known/mcp/server-card.json
+  Cache-Control: public, max-age=3600
+
+/.well-known/agent-skills/index.json
+  Cache-Control: public, max-age=3600

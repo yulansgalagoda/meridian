@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agentskills.io/schema/v0.2.0/index.json",
+  "skills": [
+    {
+      "name": "browse-collection",
+      "type": "service",
+      "description": "Browse the full catalogue of historical objects in The Meridian archive. Each object has a name, era, origin country, condition, category, year, and a set of tags.",
+      "url": "https://meridian.yulan.me/collection"
+    },
+    {
+      "name": "browse-categories",
+      "type": "service",
+      "description": "Explore objects grouped by their collecting category (e.g. maps, instruments, documents, photographs).",
+      "url": "https://meridian.yulan.me/categories"
+    },
+    {
+      "name": "read-about",
+      "type": "service",
+      "description": "Learn about The Meridian archive, its curatorial approach, and the collector behind it.",
+      "url": "https://meridian.yulan.me/about"
+    }
+  ]
+}

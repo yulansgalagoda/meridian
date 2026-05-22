@@ -1,0 +1,10 @@
+{
+  "serverInfo": {
+    "name": "The Meridian",
+    "version": "1.0.0",
+    "description": "A private archive of antiques and historical objects spanning 1590 to the present, curated by Yulan Galagoda. Browse the collection by era, category, origin, condition, and tag.",
+    "url": "https://meridian.yulan.me"
+  },
+  "transport": [],
+  "capabilities": {}
+}

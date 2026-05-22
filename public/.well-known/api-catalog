@@ -1,0 +1,19 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://meridian.yulan.me",
+      "https://www.iana.org/assignments/relation/describedby": [
+        {
+          "href": "https://meridian.yulan.me",
+          "type": "text/html"
+        }
+      ],
+      "https://www.iana.org/assignments/relation/related": [
+        {
+          "href": "https://meridian.yulan.me/llms.txt",
+          "type": "text/markdown"
+        }
+      ]
+    }
+  ]
+}
