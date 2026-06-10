@@ -3,6 +3,8 @@ import '../styles/global.css';
 
 const nav = [
   { href: '/collection', label: 'Collection' },
+  { href: '/narratives', label: 'Narratives' },
+  { href: '/seeking', label: 'Seeking' },
   { href: '/about', label: 'About' },
 ];
 
@@ -12,7 +14,7 @@ const pathname = Astro.url.pathname;
 <header class="site-header">
   <div class="container">
     <div class="site-header__inner">
-      <a href="/" class="site-logo">The Meridian</a>
+      <a href="/" class="site-logo"><span class="site-logo__mark">✦</span> The Meridian</a>
       <nav aria-label="Primary navigation">
         <ul class="site-nav">
           {nav.map(({ href, label }) => (

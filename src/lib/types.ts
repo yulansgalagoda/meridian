@@ -16,6 +16,9 @@ export interface Item {
   materials: string;
   dimensions: string;
   condition: string;
+  provenance: string;
+  verification: string;
+  narrativeIds: string[];
   primaryImage: string | null;
   galleryImages: string[];
   imageAltText: string;
@@ -36,9 +39,20 @@ export interface Category {
   publishStatus: string;
 }
 
+export interface Narrative {
+  id: string;
+  slug: string;
+  name: string;
+  premise: string;
+  displayOrder: number;
+  publishStatus: string;
+  itemIds: string[]; // related item page ids (dashless)
+}
+
 export interface SiteData {
   items: Item[];
   categories: Category[];
+  narratives: Narrative[];
   aboutHtml: string;
 }
 

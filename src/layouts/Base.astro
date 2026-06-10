@@ -4,6 +4,9 @@ interface Props {
   description?: string;
   image?: string;
   canonical?: string;
+  type?: 'website' | 'article';
+  publishedTime?: string;
+  jsonLd?: object | object[];
 }
 
 const {
@@ -11,11 +14,22 @@ const {
   description = 'A curated archive of antiques and historical objects.',
   image,
   canonical,
+  type = 'website',
+  publishedTime,
+  jsonLd,
 } = Astro.props;
 
 const siteName = 'The Meridian';
+const siteUrl = 'https://meridian.yulan.me';
 const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
-const url = canonical ?? Astro.url.href;
+const url = canonical ?? new URL(Astro.url.pathname, siteUrl).href;
+
+// Absolute image URL for social cards
+const ogImage = image
+  ? (image.startsWith('http') ? image : new URL(image, siteUrl).href)
+  : new URL('/og-default.png', siteUrl).href;
+
+const jsonLdBlocks = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 ---
 
 <!doctype html>
@@ -28,14 +42,24 @@ const url = canonical ?? Astro.url.href;
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={url} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="author" content="Yulan Galagoda" />
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={type} />
     <meta property="og:site_name" content={siteName} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={url} />
-    {image && <meta property="og:image" content={image} />}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content="en_GB" />
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,6 +67,14 @@ const url = canonical ?? Astro.url.href;
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Sitemap -->
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <!-- Structured data -->
+    {jsonLdBlocks.map((block) => (
+      <script type="application/ld+json" set:html={JSON.stringify(block)} />
+    ))}
 
     <slot name="head" />
 
@@ -62,6 +94,7 @@ const url = canonical ?? Astro.url.href;
                 description: 'A private archive of antiques and historical objects spanning 1590 to the present.',
                 url: 'https://meridian.yulan.me',
                 collection: 'https://meridian.yulan.me/collection',
+                narratives: 'https://meridian.yulan.me/narratives',
                 categories: 'https://meridian.yulan.me/categories',
                 about: 'https://meridian.yulan.me/about',
                 llms: 'https://meridian.yulan.me/llms.txt',
@@ -88,7 +121,7 @@ const url = canonical ?? Astro.url.href;
         },
         { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
       );
-      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+      document.querySelectorAll('.reveal, .obj-card').forEach((el) => observer.observe(el));
     </script>
 
     <!-- Header scroll shadow -->

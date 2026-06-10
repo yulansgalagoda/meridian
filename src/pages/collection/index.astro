@@ -7,11 +7,31 @@ import FilterBar from '../../components/FilterBar.astro';
 import { getSiteData } from '../../lib/notion';
 
 const { items, categories } = await getSiteData();
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'The Meridian — Collection',
+  url: 'https://meridian.yulan.me/collection',
+  description: `${items.length} antiques and historical objects: maps, scientific instruments, rare books, photographs, and documents.`,
+  isPartOf: { '@type': 'WebSite', name: 'The Meridian', url: 'https://meridian.yulan.me' },
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: items.length,
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      url: `https://meridian.yulan.me/collection/${item.slug}`,
+    })),
+  },
+};
 ---
 
 <Base
   title="Collection"
-  description={`${items.length} antiques and historical objects in the archive.`}
+  description={`Browse all ${items.length} antiques and historical objects in The Meridian archive — antique maps, scientific instruments, rare books, early photographs, and historical documents, filterable by era, origin, category, and condition.`}
+  jsonLd={jsonLd}
 >
   <Header />
 

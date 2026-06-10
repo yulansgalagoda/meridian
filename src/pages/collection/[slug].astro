@@ -17,6 +17,7 @@ export async function getStaticPaths() {
 }
 
 const { item, prevItem, nextItem } = Astro.props;
+const { narratives } = await getSiteData();
 const bodyHtml = await fetchItemContent(item.id);
 
 const allImages = [
@@ -24,9 +25,18 @@ const allImages = [
   ...item.galleryImages,
 ];
 
-const metaFields = [
-  { label: 'Year', value: item.year !== null ? (item.dateDetail ? `${item.year} · ${item.dateDetail}` : String(item.year)) : item.dateDetail || null },
-  { label: 'Era', value: item.era || null },
+// Narratives this object appears in (Published only)
+const dashless = (s: string) => s.replace(/-/g, '');
+const itemNarratives = narratives.filter(
+  (n) => n.publishStatus === 'Published' && item.narrativeIds.includes(dashless(n.id))
+);
+
+const yearLabel = item.year !== null
+  ? (item.year < 0 ? `${Math.abs(item.year)} BCE` : String(item.year))
+  : null;
+
+const wallRows = [
+  { label: 'Date', value: item.year !== null ? (item.dateDetail ? `${yearLabel} · ${item.dateDetail}` : yearLabel) : item.dateDetail || null },
   { label: 'Maker', value: item.maker || null },
   { label: 'Origin', value: item.originCountry || null },
   { label: 'Materials', value: item.materials || null },
@@ -34,21 +44,67 @@ const metaFields = [
   { label: 'Condition', value: item.condition || null },
   { label: 'Category', value: item.categoryName || null },
 ].filter((f) => f.value !== null);
+
+const verificationClass =
+  item.verification === 'Verified' ? 'badge--verified'
+  : item.verification === 'Research Ongoing' ? 'badge--research'
+  : item.verification === 'Unverified' ? 'badge--unverified'
+  : null;
+
+const verificationMark =
+  item.verification === 'Verified' ? '✓' : item.verification ? '◌' : '';
+
+// ── SEO ──────────────────────────────────────────────────────────────────────
+const pageUrl = `https://meridian.yulan.me/collection/${item.slug}`;
+const seoDescription = item.shortDescription || item.story || `${item.name} — an object in The Meridian archive.`;
+
+const creativeWork: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: item.name,
+  url: pageUrl,
+  description: seoDescription,
+  ...(item.primaryImage && { image: `https://meridian.yulan.me${item.primaryImage}` }),
+  ...(item.year !== null && { dateCreated: String(item.year) }),
+  ...(item.maker && { creator: { '@type': 'Organization', name: item.maker } }),
+  ...(item.materials && { material: item.materials }),
+  ...(item.originCountry && { countryOfOrigin: { '@type': 'Country', name: item.originCountry } }),
+  ...(item.tags.length && { keywords: item.tags.join(', ') }),
+  isPartOf: {
+    '@type': 'Collection',
+    name: 'The Meridian Collection',
+    url: 'https://meridian.yulan.me/collection',
+  },
+};
+
+const breadcrumbs = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Collection', item: 'https://meridian.yulan.me/collection' },
+    ...(item.categoryName && item.categorySlug
+      ? [{ '@type': 'ListItem', position: 2, name: item.categoryName, item: `https://meridian.yulan.me/categories/${item.categorySlug}` }]
+      : []),
+    { '@type': 'ListItem', position: item.categoryName ? 3 : 2, name: item.name, item: pageUrl },
+  ],
+};
 ---
 
 <Base
   title={item.name}
-  description={item.shortDescription || item.story || undefined}
+  description={seoDescription}
   image={item.primaryImage ?? undefined}
+  type="article"
+  jsonLd={[creativeWork, breadcrumbs]}
 >
   <Header />
 
   <main class="item-page">
-    <div class="container container--narrow">
+    <div class="container">
 
-      <!-- Back -->
+      <!-- Breadcrumb -->
       <nav class="item-back" aria-label="Breadcrumb">
-        <a href="/collection" class="item-back__link eyebrow">
+        <a href="/collection" class="item-back__link">
           <svg viewBox="0 0 10 8" width="10" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <path d="M9 4H1M4 1L1 4l3 3"/>
           </svg>
@@ -57,89 +113,110 @@ const metaFields = [
         {item.categoryName && item.categorySlug && (
           <>
             <span class="item-back__sep" aria-hidden="true">/</span>
-            <a href={`/categories/${item.categorySlug}`} class="item-back__link eyebrow">
+            <a href={`/categories/${item.categorySlug}`} class="item-back__link">
               {item.categoryName}
             </a>
           </>
         )}
       </nav>
 
-      <!-- Header -->
-      <header class="item-page__header">
-        <p class="eyebrow eyebrow--accent">{item.era || 'Object'}</p>
-        <h1 class="item-page__name">{item.name}</h1>
-        {item.shortDescription && (
-          <p class="item-page__short">{item.shortDescription}</p>
-        )}
-      </header>
-    </div>
+      <!-- ── Intro: image + wall label ───────────────────────────────────── -->
+      <div class="item-intro">
+        <div>
+          <div class="item-intro__img" id="lightbox-trigger">
+            {item.primaryImage ? (
+              <img
+                src={item.primaryImage}
+                alt={item.imageAltText || item.name}
+                loading="eager"
+                decoding="async"
+                id="primary-img"
+              />
+            ) : (
+              <div class="item-intro__placeholder">
+                {yearLabel && <span class="placeholder__year">{yearLabel}</span>}
+                <span class="placeholder__label">No photograph</span>
+              </div>
+            )}
+          </div>
 
-    <!-- Image area — full container width -->
-    <div class="item-image-area">
-      <div id="lightbox-trigger">
-        {item.primaryImage ? (
-          <img
-            src={item.primaryImage}
-            alt={item.imageAltText || item.name}
-            class="item-primary-image"
-            loading="eager"
-            decoding="async"
-            id="primary-img"
-            style="cursor: zoom-in;"
-          />
-        ) : (
-          <div class="item-primary-placeholder">
-            {item.year !== null && (
-              <span class="placeholder__year">
-                {item.year < 0 ? `${Math.abs(item.year)} BCE` : item.year}
+          {allImages.length > 1 && (
+            <div class="gallery-strip" id="gallery-strip">
+              {allImages.map((src, i) => (
+                <img
+                  src={src}
+                  alt={`${item.name} — view ${i + 1}`}
+                  class={`gallery-thumb${i === 0 ? ' is-active' : ''}`}
+                  loading="lazy"
+                  decoding="async"
+                  data-index={i}
+                  data-src={src}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h1 class="item-intro__name">{item.name}</h1>
+          {item.shortDescription && (
+            <p class="item-intro__short">{item.shortDescription}</p>
+          )}
+
+          <div class="item-badges">
+            {verificationClass && (
+              <span class={`badge ${verificationClass}`} title="Verification status per the archive's charter">
+                {verificationMark} {item.verification}
               </span>
             )}
-            <span class="placeholder__label">No photograph</span>
+            {item.era && (
+              <span class="badge badge--era">{item.era}{yearLabel ? ` · ${yearLabel}` : ''}</span>
+            )}
           </div>
-        )}
-      </div>
 
-      <!-- Thumbnail strip -->
-      {allImages.length > 1 && (
-        <div class="gallery-strip container" id="gallery-strip">
-          {allImages.map((src, i) => (
-            <img
-              src={src}
-              alt={`${item.name} view ${i + 1}`}
-              class={`gallery-thumb${i === 0 ? ' is-active' : ''}`}
-              loading="lazy"
-              decoding="async"
-              data-index={i}
-              data-src={src}
-            />
-          ))}
+          {wallRows.length > 0 && (
+            <dl class="wall-label">
+              {wallRows.map((row) => (
+                <div class="wall-label__row">
+                  <dt class="wall-label__k">{row.label}</dt>
+                  <dd class="wall-label__v">{row.value}</dd>
+                </div>
+              ))}
+              {itemNarratives.length > 0 && (
+                <div class="wall-label__row">
+                  <dt class="wall-label__k">Narratives</dt>
+                  <dd class="wall-label__v">
+                    {itemNarratives.map((n, i) => (
+                      <>
+                        <a href={`/narratives/${n.slug}`}>{n.name}</a>{i < itemNarratives.length - 1 ? ', ' : ''}
+                      </>
+                    ))}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
+
+          {item.provenance && (
+            <div class="provenance">
+              <p class="provenance__k">Provenance</p>
+              <p>{item.provenance}</p>
+            </div>
+          )}
+
+          {item.tags.length > 0 && (
+            <div class="tag-list" style="margin-top: var(--sp-6);">
+              {item.tags.map((tag) => (
+                <span class="tag">{tag}</span>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
 
+    <!-- ── Full description (entire Notion page body) ──────────────────────── -->
     <div class="container container--narrow">
-      <!-- Metadata -->
-      {metaFields.length > 0 && (
-        <dl class="item-meta-block">
-          {metaFields.map((field) => (
-            <div class="item-meta-field">
-              <dt class="item-meta-field__label">{field.label}</dt>
-              <dd class="item-meta-field__value">{field.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-
-      <!-- Tags -->
-      {item.tags.length > 0 && (
-        <div class="tag-list" style="margin-top: var(--sp-6);">
-          {item.tags.map((tag) => (
-            <span class="tag">{tag}</span>
-          ))}
-        </div>
-      )}
-
-      <!-- Body -->
       {bodyHtml && (
         <article class="item-body" set:html={bodyHtml} />
       )}
@@ -188,12 +265,6 @@ const metaFields = [
 </Base>
 
 <style>
-  .item-pagination {
-    border-top: 1px solid var(--stone-3);
-    margin-top: var(--sp-16);
-    padding-block: var(--sp-10);
-  }
-
   .item-pagination__inner {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -231,7 +302,8 @@ const metaFields = [
   }
 
   .item-pagination__label {
-    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
     font-weight: 500;
     letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
@@ -241,67 +313,9 @@ const metaFields = [
   .item-pagination__name {
     font-family: var(--font-display);
     font-size: var(--text-lg);
-    font-weight: 400;
+    font-weight: 500;
     line-height: 1.3;
     max-width: 30ch;
-  }
-
-  .item-back {
-    padding-top: var(--sp-8);
-    display: flex;
-    align-items: center;
-    gap: var(--sp-3);
-    margin-bottom: 0;
-  }
-
-  .item-back__link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-2);
-    color: var(--ink-faint);
-    text-decoration: none;
-    font-size: 0.65rem;
-    letter-spacing: var(--tracking-caps);
-    transition: color var(--dur-base) var(--ease-io);
-  }
-  .item-back__link:hover { color: var(--ink-mute); }
-
-  .item-back__sep {
-    color: var(--stone-4);
-    font-size: var(--text-xs);
-  }
-
-  .item-image-area {
-    margin-block: var(--sp-8);
-  }
-
-  .item-primary-placeholder {
-    width: 100%;
-    height: clamp(240px, 38vh, 440px);
-    background: var(--stone-2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-3);
-  }
-
-  .placeholder__year {
-    font-family: var(--font-display);
-    font-size: clamp(5rem, 14vw, 12rem);
-    font-weight: 300;
-    color: var(--stone-3);
-    line-height: 1;
-    letter-spacing: -0.02em;
-    user-select: none;
-  }
-
-  .placeholder__label {
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: var(--tracking-caps);
-    text-transform: uppercase;
-    color: var(--ink-faint);
   }
 </style>
 
@@ -322,7 +336,7 @@ const metaFields = [
     thumb.classList.add('is-active');
   });
 
-  // Open lightbox
+  // Lightbox
   function openLightbox(src: string, alt: string) {
     lightboxImg.src = src;
     lightboxImg.alt = alt;

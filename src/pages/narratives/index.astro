@@ -1,0 +1,94 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { getSiteData } from '../../lib/notion';
+
+const { items, narratives } = await getSiteData();
+
+const published = narratives
+  .filter((n) => n.publishStatus === 'Published')
+  .sort((a, b) => a.displayOrder - b.displayOrder);
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
+
+const dashless = (s: string) => s.replace(/-/g, '');
+const itemById = new Map(items.map((i) => [dashless(i.id), i]));
+
+function narrativeItems(n: (typeof narratives)[number]) {
+  return n.itemIds.map((id) => itemById.get(id)).filter((i) => i !== undefined);
+}
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Narratives — The Meridian',
+  url: 'https://meridian.yulan.me/narratives',
+  description: 'Stories told by combining objects: connected threads across the antiques and historical objects of The Meridian archive.',
+  isPartOf: { '@type': 'WebSite', name: 'The Meridian', url: 'https://meridian.yulan.me' },
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: published.length,
+    itemListElement: published.map((n, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: n.name,
+      url: `https://meridian.yulan.me/narratives/${n.slug}`,
+    })),
+  },
+};
+---
+
+<Base
+  title="Narratives"
+  description="Stories told by combining objects. Each narrative reads the collection along a different thread — a year, a maker, a war, a way of seeing — connecting antiques and historical objects into one account."
+  jsonLd={jsonLd}
+>
+  <Header />
+
+  <main>
+    <div class="container" style="padding-bottom: var(--section-y);">
+      <header class="page-header">
+        <p class="eyebrow eyebrow--accent">Stories across the shelf</p>
+        <h1 class="page-header__title">Narratives</h1>
+        <p class="page-header__desc">
+          A collection is usually read along its deliberate threads: by category, by maker, by theme.
+          These narratives read it differently — each one connects objects that were acquired separately,
+          for separate reasons, into a single story.
+        </p>
+      </header>
+
+      {published.length > 0 ? (
+        <div class="narr-grid">
+          {published.map((n, idx) => {
+            const linked = narrativeItems(n);
+            const thumbs = linked.filter((i) => i.primaryImage).slice(0, 4);
+            return (
+              <a class="narr-card reveal" href={`/narratives/${n.slug}`}>
+                <p class="narr-card__kicker">Narrative · {ROMAN[idx] ?? idx + 1}</p>
+                <h2 class="narr-card__name">{n.name}</h2>
+                {n.premise && <p class="narr-card__premise">{n.premise}</p>}
+                <div class="narr-card__objects">
+                  {thumbs.map((i) => (
+                    <img
+                      class="narr-card__thumb"
+                      src={i.primaryImage}
+                      alt={i.imageAltText || i.name}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ))}
+                  <span class="narr-card__count">{linked.length} {linked.length === 1 ? 'object' : 'objects'}</span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <p class="no-results">The first narratives are being written. Return soon.</p>
+      )}
+    </div>
+  </main>
+
+  <Footer itemCount={items.length} />
+</Base>

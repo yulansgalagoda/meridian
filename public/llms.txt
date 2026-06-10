@@ -4,28 +4,47 @@
 
 ## About
 
-The Meridian is a personal collection of rare and historically significant objects
-spanning 1590 to the present. Each piece is documented with provenance, condition
-notes, origin country, era classification, and curatorial commentary.
+The Meridian is a private reference collection of rare and historically significant
+objects spanning 1590 to the present, collected along two threads: Sri Lanka and
+Ceylon across every century (maps, photographs, documents, autographs, books), and
+the instruments of progress — the small objects by which mankind learned to measure,
+record, calculate, and see (slide rules, barometers, typewriters, cameras,
+chronometers, and the books that carried ideas).
 
-The archive is built and maintained as a static website backed by a private Notion
-database. It is not a shop — nothing is for sale. It is a record.
+Each object is documented with provenance, a verification status (Verified /
+Research Ongoing / Unverified), condition notes, origin country, era classification,
+and full curatorial research. The archive is built as a static website backed by a
+private Notion database. It is not a shop — nothing is for sale. It is a record.
 
 ## Collection
-
-The collection currently holds objects across multiple categories including
-antique maps, scientific instruments, historical documents, and ephemera.
-Objects can be browsed, filtered by era, origin, condition, category, and tag,
-or explored individually with full detail and gallery images.
 
 - Full catalogue: https://meridian.yulan.me/collection
 - Browse by category: https://meridian.yulan.me/categories
 - About the archive: https://meridian.yulan.me/about
 
+Objects can be filtered by era, origin, condition, category, and tag, or explored
+individually with full research, references, and gallery images.
+
+## Narratives
+
+Stories told by combining objects — each narrative connects objects acquired
+separately into a single account (a year, a maker, a war, a way of seeing).
+
+- All narratives: https://meridian.yulan.me/narratives
+
+## The Archive — policies
+
+- Collecting Policy: https://meridian.yulan.me/collecting-policy
+- Verification & Provenance standard: https://meridian.yulan.me/verification-and-provenance
+- Seeking (public want list): https://meridian.yulan.me/seeking
+- Access, Citation & Image Use: https://meridian.yulan.me/access-citation-image-use
+- Annual Review: https://meridian.yulan.me/annual-review
+
 ## Curator
 
-Yulan Galagoda — collector, designer.
+Yulan Galagoda — collector, designer. Plymouth, United Kingdom.
 
 ## Contact
 
 https://yulan.me
+yulangalagoda1@gmail.com

@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -23,5 +24,5 @@ const syncImages = {
 export default defineConfig({
   site: 'https://meridian.yulan.me',
   output: 'static',
-  integrations: [syncImages],
+  integrations: [sitemap(), syncImages],
 });

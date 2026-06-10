@@ -1,0 +1,175 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { getSiteData, fetchItemContent } from '../../lib/notion';
+import type { Item } from '../../lib/types';
+
+export async function getStaticPaths() {
+  const { narratives } = await getSiteData();
+  const published = narratives
+    .filter((n) => n.publishStatus === 'Published')
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+  return published.map((narrative, idx) => ({
+    params: { slug: narrative.slug },
+    props: { narrative, index: idx },
+  }));
+}
+
+const { narrative, index } = Astro.props;
+const { items } = await getSiteData();
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
+
+const dashless = (s: string) => s.replace(/-/g, '');
+const itemById = new Map(items.map((i) => [dashless(i.id), i]));
+const linkedItems = narrative.itemIds
+  .map((id) => itemById.get(id))
+  .filter((i): i is Item => i !== undefined);
+
+// ── Body: render Notion blocks, then weave object cards in at first mention ──
+const rawHtml = await fetchItemContent(narrative.id);
+
+// Make collection links relative (Notion stores absolute URLs to the live site)
+const bodyHtml = rawHtml.replace(/https?:\/\/meridian\.yulan\.me\/collection\//g, '/collection/');
+
+function yearLabel(item: Item): string | null {
+  if (item.year === null) return null;
+  return item.year < 0 ? `${Math.abs(item.year)} BCE` : String(item.year);
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function cardHtml(item: Item, witnessIdx: number): string {
+  const numParts = [`Witness ${ROMAN[witnessIdx] ?? witnessIdx + 1}`];
+  const yl = item.dateDetail || yearLabel(item);
+  if (yl) numParts.push(yl);
+  if (item.originCountry) numParts.push(item.originCountry);
+  const img = item.primaryImage
+    ? `<div class="obj-card__img"><img src="${item.primaryImage}" alt="${escapeHtml(item.imageAltText || item.name)}" loading="lazy" decoding="async"></div>`
+    : '';
+  const desc = item.shortDescription
+    ? `<p class="obj-card__desc">${escapeHtml(item.shortDescription)}</p>`
+    : '';
+  return `<a class="obj-card" href="/collection/${item.slug}">${img}<span class="obj-card__txt"><span class="obj-card__num">${escapeHtml(numParts.join(' · '))}</span><span class="obj-card__name">${escapeHtml(item.name)}</span>${desc}<span class="obj-card__go">View object →</span></span></a>`;
+}
+
+// Weave: after the first paragraph that links to an object, insert its card.
+const paragraphs = bodyHtml.split(/(?<=<\/p>)\s*/);
+const placed = new Set<string>();
+let woven = '';
+let witnessCounter = 0;
+
+for (const para of paragraphs) {
+  woven += para;
+  for (const item of linkedItems) {
+    if (placed.has(item.slug)) continue;
+    if (para.includes(`/collection/${item.slug}`)) {
+      woven += cardHtml(item, witnessCounter);
+      placed.add(item.slug);
+      witnessCounter++;
+    }
+  }
+}
+
+// Objects related but never mentioned in the prose — gathered at the end.
+const unplaced = linkedItems.filter((i) => !placed.has(i.slug));
+
+// ── Constellation header ─────────────────────────────────────────────────────
+const constPoints = linkedItems.slice(0, 7).map((item, i, arr) => {
+  const n = arr.length;
+  const w = Math.min(640, Math.max(280, n * 110));
+  const x = n === 1 ? w / 2 : 40 + (i * (w - 80)) / (n - 1);
+  const y = i % 2 === 0 ? 58 : 26;
+  return { x, y, w, label: yearLabel(item) ?? item.era ?? '', centre: i === Math.floor((n - 1) / 2) };
+});
+const constWidth = constPoints[0]?.w ?? 360;
+
+// ── SEO ──────────────────────────────────────────────────────────────────────
+const pageUrl = `https://meridian.yulan.me/narratives/${narrative.slug}`;
+const ogImage = linkedItems.find((i) => i.primaryImage)?.primaryImage ?? undefined;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: narrative.name,
+    description: narrative.premise || `A narrative across ${linkedItems.length} objects of The Meridian archive.`,
+    url: pageUrl,
+    ...(ogImage && { image: `https://meridian.yulan.me${ogImage}` }),
+    author: { '@type': 'Person', name: 'Yulan Galagoda', url: 'https://yulan.me' },
+    publisher: { '@type': 'Organization', name: 'The Meridian', url: 'https://meridian.yulan.me' },
+    isPartOf: { '@type': 'WebSite', name: 'The Meridian', url: 'https://meridian.yulan.me' },
+    about: linkedItems.map((i) => ({
+      '@type': 'CreativeWork',
+      name: i.name,
+      url: `https://meridian.yulan.me/collection/${i.slug}`,
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Narratives', item: 'https://meridian.yulan.me/narratives' },
+      { '@type': 'ListItem', position: 2, name: narrative.name, item: pageUrl },
+    ],
+  },
+];
+---
+
+<Base
+  title={narrative.name}
+  description={narrative.premise || `${narrative.name} — a narrative across ${linkedItems.length} objects of The Meridian archive.`}
+  image={ogImage}
+  type="article"
+  jsonLd={jsonLd}
+>
+  <Header />
+
+  <main>
+    <!-- ── Narrative hero ─────────────────────────────────────────────────── -->
+    <section class="narr-hero">
+      <p class="narr-hero__kicker">Narrative · {ROMAN[index] ?? index + 1}</p>
+      <h1 class="narr-hero__title">{narrative.name}</h1>
+      {narrative.premise && <p class="narr-hero__premise">{narrative.premise}</p>}
+
+      {constPoints.length > 1 && (
+        <svg
+          class="constellation"
+          width={constWidth}
+          height="92"
+          viewBox={`0 0 ${constWidth} 92`}
+          aria-hidden="true"
+        >
+          {constPoints.slice(0, -1).map((p, i) => (
+            <line x1={p.x} y1={p.y} x2={constPoints[i + 1].x} y2={constPoints[i + 1].y} />
+          ))}
+          {constPoints.map((p) => (
+            <circle cx={p.x} cy={p.y} r={p.centre ? 5 : 4.5} class={p.centre ? 'is-centre' : undefined} />
+          ))}
+          {constPoints.map((p) => (
+            <text x={p.x} y={p.y === 26 ? 12 : 82} text-anchor="middle">{p.label}</text>
+          ))}
+        </svg>
+      )}
+    </section>
+
+    <!-- ── Body with woven object cards ───────────────────────────────────── -->
+    <article class="narr-body">
+      <Fragment set:html={woven} />
+
+      {unplaced.length > 0 && (
+        <>
+          <div class="prose-page__orn" aria-hidden="true" style="margin-block: var(--sp-10);">✦</div>
+          {unplaced.map((item, i) => (
+            <Fragment set:html={cardHtml(item, witnessCounter + i)} />
+          ))}
+        </>
+      )}
+    </article>
+  </main>
+
+  <Footer itemCount={items.length} />
+</Base>

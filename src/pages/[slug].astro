@@ -1,0 +1,58 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getSiteData, fetchPolicyContent, POLICY_PAGES, type PolicySlug } from '../lib/notion';
+
+export async function getStaticPaths() {
+  return (Object.keys(POLICY_PAGES) as PolicySlug[]).map((slug) => ({
+    params: { slug },
+    props: { slug },
+  }));
+}
+
+const { slug } = Astro.props;
+const page = POLICY_PAGES[slug];
+const { items } = await getSiteData();
+const bodyHtml = await fetchPolicyContent(slug);
+
+const pageUrl = `https://meridian.yulan.me/${slug}`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `${page.title} — The Meridian`,
+    url: pageUrl,
+    description: page.description,
+    isPartOf: { '@type': 'WebSite', name: 'The Meridian', url: 'https://meridian.yulan.me' },
+    author: { '@type': 'Person', name: 'Yulan Galagoda', url: 'https://yulan.me' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'The Meridian', item: 'https://meridian.yulan.me' },
+      { '@type': 'ListItem', position: 2, name: page.title, item: pageUrl },
+    ],
+  },
+];
+---
+
+<Base title={page.title} description={page.description} jsonLd={jsonLd}>
+  <Header />
+
+  <main>
+    <div class="prose-page">
+      <header class="prose-page__header">
+        <p class="prose-page__kicker">{page.kicker}</p>
+        <h1 class="prose-page__title">{page.title}</h1>
+        <div class="prose-page__orn" aria-hidden="true">✦</div>
+      </header>
+
+      <article class="prose-body" set:html={bodyHtml} />
+    </div>
+  </main>
+
+  <Footer itemCount={items.length} />
+</Base>

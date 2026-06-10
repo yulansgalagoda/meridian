@@ -2,602 +2,159 @@
 import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import ItemCard from '../components/ItemCard.astro';
-import Timeline from '../components/Timeline.astro';
-import CategoryIcon from '../components/CategoryIcon.astro';
+import MeridianArc from '../components/MeridianArc.astro';
 import { getSiteData } from '../lib/notion';
 
-const { items, categories } = await getSiteData();
+const { items, narratives } = await getSiteData();
 
-// Featured items (up to 4 for a 2×2 grid)
-const featured = items.filter((i) => i.featured).slice(0, 4);
-const displayItems = featured.length > 0 ? featured : items.slice(0, 4);
+// Featured plates — up to 3 for the vitrine row
+const featured = items.filter((i) => i.featured && i.primaryImage).slice(0, 3);
+const plates = featured.length >= 3
+  ? featured
+  : [...featured, ...items.filter((i) => i.primaryImage && !featured.includes(i))].slice(0, 3);
 
-// Stats
-type ItemWithYear = (typeof items)[number] & { year: number };
-const yearItems = items.filter((i): i is ItemWithYear => i.year !== null);
-const oldestYear  = yearItems.length ? Math.min(...yearItems.map(i => i.year)) : null;
-const newestYear  = yearItems.length ? Math.max(...yearItems.map(i => i.year)) : null;
-const originCount = new Set(items.map(i => i.originCountry).filter(Boolean)).size;
-const latestAdded = items.length
-  ? [...items].sort((a, b) => b.itemId - a.itemId)[0]
-  : null;
+const publishedNarratives = narratives
+  .filter((n) => n.publishStatus === 'Published')
+  .sort((a, b) => a.displayOrder - b.displayOrder)
+  .slice(0, 2);
 
-function formatYear(y: number): string {
-  return y < 0 ? `${Math.abs(y)} BCE` : String(y);
+const years = items.map((i) => i.year).filter((y): y is number => y !== null);
+const minYear = years.length ? Math.min(...years) : null;
+const maxYear = years.length ? Math.max(...years) : null;
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+function plateLabel(item: (typeof items)[number]): string {
+  const parts: string[] = [];
+  if (item.year !== null) parts.push(item.dateDetail || String(item.year));
+  if (item.originCountry) parts.push(item.originCountry);
+  return parts.join(' · ');
 }
 
-// Items per category
-const catCounts = new Map<string, number>();
-for (const item of items) {
-  if (item.categorySlug) catCounts.set(item.categorySlug, (catCounts.get(item.categorySlug) ?? 0) + 1);
-}
+const description = `The Meridian — a private archive of ${items.length} antiques and historical objects spanning ${minYear ?? ''} to ${maxYear ?? ''}: Sri Lanka and Ceylon across every century, and the instruments by which mankind learned to measure, record, calculate, and see. Maps, scientific instruments, rare books, photographs, and documents, each verified and documented.`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'The Meridian',
+    alternateName: 'The Meridian Archive',
+    url: 'https://meridian.yulan.me',
+    description,
+    inLanguage: 'en',
+    publisher: { '@id': 'https://meridian.yulan.me/#curator' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': 'https://meridian.yulan.me/#curator',
+    name: 'Yulan Galagoda',
+    url: 'https://yulan.me',
+    email: 'mailto:yulangalagoda1@gmail.com',
+    jobTitle: 'Curator',
+    knowsAbout: [
+      'Antiques',
+      'Sri Lanka history',
+      'Ceylon colonial history',
+      'Scientific instruments',
+      'Antiquarian books',
+      'Early photography',
+      'Cartography',
+      'Provenance research',
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Collection',
+    name: 'The Meridian Collection',
+    url: 'https://meridian.yulan.me/collection',
+    description: `${items.length} antiques and historical objects, ${minYear ?? ''}–${maxYear ?? ''}.`,
+    collectionSize: items.length,
+  },
+];
 ---
 
-<Base
-  title="The Meridian"
-  description="A curated archive of antiques and historical objects by YG."
->
+<Base title="The Meridian" description={description} jsonLd={jsonLd}>
   <Header />
 
-  <main class="home">
-
-    <!-- ── Row 1: Introduction + Timeline ─────────────────────────────────── -->
-    <section class="hrow hrow--hero hrow--dark" aria-label="Introduction">
-      <div class="hrow__inner">
-        <div class="hrow__left">
-          <div class="hero-header">
-            <span class="hero-header__span">
-              {oldestYear !== null ? `${formatYear(oldestYear)} — present` : 'Private archive'}
-            </span>
-            <span class="hero-header__count">{items.length}&nbsp;objects</span>
-          </div>
-          <div class="hero-main">
-            <h1 class="intro-title">A private Archive<br>of History.</h1>
-            <p class="intro-byline">Curated by Yulan Galagoda</p>
-            <a href="/collection" class="text-cta">
-              Browse the collection
-              <svg viewBox="0 0 16 10" width="13" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <path d="M1 5h14M10 1l5 4-5 4"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-        <aside class="hrow__right hrow__right--timeline" aria-label="Collection timeline">
-          <Timeline items={items} />
-        </aside>
+  <main>
+    <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+    <section class="hero" aria-label="Introduction">
+      <div class="container">
+        <h1 class="hero__title">The Meridian</h1>
+        <p class="hero__kicker">A private archive of antiques &amp; historical objects</p>
       </div>
     </section>
 
-    <!-- ── Row 2: Why I Collect + Stats ───────────────────────────────────── -->
-    <section class="hrow hrow--light" aria-label="Why I collect">
-      <div class="hrow__inner">
-        <div class="hrow__left">
-          <p class="eyebrow eyebrow--muted">Why I collect</p>
-          <blockquote class="why-quote">
-            Objects do not explain themselves. Each one arrived from another time,
-            passed through hands I cannot count, survived neglect or care or accident.
-            I collect not to possess but to understand: what people made, why, and how long it lasted.
-          </blockquote>
-          <a href="/about" class="text-cta">
-            About this archive
-            <svg viewBox="0 0 16 10" width="13" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M1 5h14M10 1l5 4-5 4"/>
-            </svg>
-          </a>
-        </div>
-        <div class="hrow__right">
-          <p class="hrow__right-label eyebrow eyebrow--muted">The collection</p>
-          <div class="stats-grid">
-            <div class="stat">
-              <span class="stat__val">{items.length}</span>
-              <span class="stat__label">Objects</span>
-            </div>
-            <div class="stat">
-              <span class="stat__val">{categories.length}</span>
-              <span class="stat__label">Categories</span>
-            </div>
-            {oldestYear !== null && (
-              <div class="stat">
-                <span class="stat__val">{formatYear(oldestYear)}</span>
-                <span class="stat__label">Oldest dated</span>
-              </div>
-            )}
-            {newestYear !== null && (
-              <div class="stat">
-                <span class="stat__val">{formatYear(newestYear)}</span>
-                <span class="stat__label">Most recent dated</span>
-              </div>
-            )}
-            {originCount > 0 && (
-              <div class="stat stat--wide">
-                <span class="stat__val">{originCount}</span>
-                <span class="stat__label">Origins</span>
-              </div>
-            )}
-            {latestAdded && (
-              <div class="stat stat--wide">
-                <span class="stat__val stat__val--name">{latestAdded.name}</span>
-                <span class="stat__label">Latest acquisition</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+    <!-- ── Epigraph ──────────────────────────────────────────────────────── -->
+    <section class="epigraph" aria-label="Epigraph">
+      <div class="epigraph__orn" aria-hidden="true">✦</div>
+      <p class="epigraph__pali" lang="pi">Vayadhammā saṅkhārā</p>
+      <p class="epigraph__trans">All conditioned things are subject to decay.</p>
+      <p class="epigraph__source">
+        — The Buddha's final words ·
+        <a href="https://suttacentral.net/dn16" target="_blank" rel="noopener">Mahāparinibbāna Sutta, Dīgha Nikāya 16</a>
+      </p>
     </section>
 
-    <!-- ── Row 3: Featured items + Categories ─────────────────────────────── -->
-    {(displayItems.length > 0 || categories.length > 0) && (
-      <section class="hrow hrow--mid" aria-label="Featured and categories">
-        <div class="hrow__inner">
-          {displayItems.length > 0 && (
-            <div class="hrow__left">
-              <div class="row-header">
-                <h2 class="row-header__title eyebrow">Selected objects</h2>
-                <a href="/collection" class="row-header__link eyebrow">All objects</a>
-              </div>
-              <div class="item-grid feat-grid">
-                {displayItems.map((item, i) => (
-                  <ItemCard item={item} eager={i < 2} compact />
-                ))}
-              </div>
-            </div>
-          )}
-          {categories.length > 0 && (
-            <div class="hrow__right">
-              <div class="row-header">
-                <h2 class="row-header__title eyebrow">Categories</h2>
-              </div>
-              <ul class="cat-list">
-                {categories.filter(cat => (catCounts.get(cat.slug) ?? 0) > 0).map((cat) => (
-                  <li>
-                    <a href={`/categories/${cat.slug}`} class="cat-list-item">
-                      <span class="cat-list-item__left">
-                        <CategoryIcon slug={cat.slug} />
-                        <span class="cat-list-item__name">{cat.name}</span>
-                      </span>
-                      <span class="cat-list-item__count">
-                        {catCounts.get(cat.slug) ?? 0}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+    <!-- ── Rotating meridian line ────────────────────────────────────────── -->
+    <MeridianArc items={items} />
+
+    <!-- ── Vitrines ──────────────────────────────────────────────────────── -->
+    {plates.length > 0 && (
+      <section class="section-gap" aria-label="Selected objects">
+        <div class="container">
+          <div class="plates-head">
+            <h2>In the vitrines</h2>
+            <div class="plates-head__rule" aria-hidden="true"></div>
+            <a href="/collection">Full collection →</a>
+          </div>
+          <div class="plate-grid">
+            {plates.map((item) => (
+              <a class="plate reveal" href={`/collection/${item.slug}`}>
+                <div class="plate__ph">
+                  <img
+                    src={item.primaryImage}
+                    alt={item.imageAltText || item.name}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <p class="plate__num">{plateLabel(item)}</p>
+                <h3 class="plate__name">{item.name}</h3>
+                {item.shortDescription && <p class="plate__meta">{item.shortDescription}</p>}
+              </a>
+            ))}
+          </div>
         </div>
       </section>
     )}
 
-    <!-- ── End note ────────────────────────────────────────────────────────── -->
-    <div class="endnote">
-      <div class="endnote__inner">
-        <p class="endnote__text">
-          The archive grows slowly, by design. New objects are added as they find their way here.
-        </p>
-        <a href="/about" class="text-cta">
-          Read about this collection
-          <svg viewBox="0 0 16 10" width="13" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <path d="M1 5h14M10 1l5 4-5 4"/>
-          </svg>
-        </a>
-      </div>
-    </div>
-
+    <!-- ── Narratives teaser ─────────────────────────────────────────────── -->
+    {publishedNarratives.length > 0 && (
+      <section class="section-gap--sm" aria-label="Narratives" style="padding-bottom: var(--section-y);">
+        <div class="container">
+          <div class="plates-head">
+            <h2>Narratives</h2>
+            <div class="plates-head__rule" aria-hidden="true"></div>
+            <a href="/narratives">All narratives →</a>
+          </div>
+          <div class="narr-grid">
+            {publishedNarratives.map((n, idx) => (
+              <a class="narr-card reveal" href={`/narratives/${n.slug}`}>
+                <p class="narr-card__kicker">Narrative · {ROMAN[idx] ?? idx + 1}</p>
+                <h3 class="narr-card__name">{n.name}</h3>
+                {n.premise && <p class="narr-card__premise">{n.premise}</p>}
+                <div class="narr-card__objects">
+                  <span class="narr-card__count">{n.itemIds.length} objects, one story →</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
   </main>
 
   <Footer itemCount={items.length} />
 </Base>
-
-<style>
-  /* ── Home wrapper ────────────────────────────────────────────────────────── */
-  .home {
-    display: block;
-  }
-
-  /* ── Full-width row — carries background + border ────────────────────────── */
-  .hrow {
-    border-top: 1px solid var(--stone-4);
-  }
-
-  /* Hero row takes most of the viewport — no border-top, header is same dark bg */
-  .hrow--hero {
-    min-height: clamp(560px, 88svh, 900px);
-    display: flex;
-    flex-direction: column;
-    border-top: none;
-  }
-
-  /* ── Inner container — max-width grid inside each row ────────────────────── */
-  .hrow__inner {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 0;
-    max-width: var(--container);
-    margin-inline: auto;
-    padding-inline: var(--sp-6);
-    flex: 1;
-  }
-
-  .hrow__left {
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-right: clamp(2rem, 4vw, 3.5rem);
-    padding-block: clamp(5.5rem, 9vw, 8rem);
-    border-right: 1px solid var(--stone-4);
-  }
-
-  .hero-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding-bottom: var(--sp-4);
-    border-bottom: 1px solid var(--stone-4);
-    margin-bottom: var(--sp-4);
-    flex-shrink: 0;
-  }
-
-  .hero-header__span {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 400;
-    letter-spacing: -0.01em;
-    color: var(--oxblood-light);
-  }
-
-  .hero-header__count {
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: var(--tracking-caps);
-    text-transform: uppercase;
-    color: rgba(237, 232, 222, 0.45);
-  }
-
-  .hero-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .hrow__right {
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding-left: clamp(2rem, 4vw, 3rem);
-    padding-block: clamp(5.5rem, 9vw, 8rem);
-  }
-
-  .hrow__right-label {
-    margin-bottom: var(--sp-6);
-  }
-
-  /* ── Row tone variants ────────────────────────────────────────────────────── */
-
-  /* Row 1 — dark charcoal */
-  .hrow--dark {
-    background: var(--dark);
-    border-top-color: var(--dark-3);
-    /* Override tokens so Timeline SVG auto-adapts on dark background */
-    --stone:     var(--on-dark);
-    --stone-3:   #3A3028;
-    --stone-4:   rgba(237,232,222,0.22);
-    --ink-faint: rgba(237,232,222,0.45);
-    --ink-mute:  rgba(237,232,222,0.65);
-  }
-
-  .hrow--dark .hrow__left {
-    border-right-color: var(--dark-3);
-  }
-
-  /* All text in the dark hero becomes cream */
-  .hrow--dark .intro-title    { color: var(--on-dark); }
-  .hrow--dark .intro-byline   { color: rgba(237,232,222,0.55); }
-  .hrow--dark .eyebrow        { color: rgba(237,232,222,0.5); }
-  .hrow--dark .eyebrow--accent { color: var(--oxblood-light); }
-  .hrow--dark .text-cta       { color: var(--oxblood-light); }
-  .hrow--dark .text-cta:hover { color: #D4A0AA; }
-
-  /* Row 2 — near-white cream */
-  .hrow--light { background: var(--stone); }
-
-  /* Row 3 — warm cream; categories start from top, not centered */
-  .hrow--mid   { background: var(--stone-2); }
-  .hrow--mid .hrow__right { justify-content: flex-start; }
-
-  /* Timeline panel — slightly distinct from main dark column */
-  .hrow__right--timeline {
-    justify-content: flex-start;
-    overflow: hidden;
-    background: var(--stone-2);
-    padding-right: clamp(1.5rem, 3vw, 2.5rem);
-  }
-
-  .hrow--dark .hrow__right--timeline {
-    background: var(--dark-2);
-  }
-
-  /* ── Row 1: Introduction ──────────────────────────────────────────────────── */
-  .intro-title {
-    font-family: var(--font-display);
-    font-size: clamp(2.25rem, 4vw, 4.5rem);
-    font-weight: 400;
-    line-height: 1.1;
-    letter-spacing: -0.022em;
-    color: var(--ink);
-    margin-top: var(--sp-5);
-    max-width: 20ch;
-  }
-
-  .intro-byline {
-    margin-top: var(--sp-4);
-    font-size: var(--text-base);
-    color: var(--ink-mute);
-    letter-spacing: 0.01em;
-  }
-
-  /* ── Shared CTA link ──────────────────────────────────────────────────────── */
-  .text-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-3);
-    margin-top: clamp(1.25rem, 2.5vw, 2rem);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--oxblood);
-    text-decoration: none;
-    letter-spacing: 0.02em;
-    transition: gap var(--dur-slow) var(--ease-out), color var(--dur-base) var(--ease-io);
-  }
-
-  .text-cta:hover {
-    color: var(--oxblood-2);
-    gap: calc(var(--sp-3) + 5px);
-  }
-
-  /* ── Row 2: Why I collect ─────────────────────────────────────────────────── */
-  .why-quote {
-    font-family: var(--font-body);
-    font-size: clamp(1rem, 1.4vw, 1.2rem);
-    font-weight: 400;
-    line-height: 1.75;
-    letter-spacing: 0;
-    color: var(--ink);
-    margin: 0 0 var(--sp-6);
-    padding: 0;
-    border: none;
-    max-width: 48ch;
-  }
-
-  .why-quote::before {
-    content: '\201C';
-    display: block;
-    font-family: var(--font-display);
-    font-size: clamp(5rem, 8vw, 8rem);
-    line-height: 0.75;
-    color: var(--oxblood);
-    opacity: 0.18;
-    letter-spacing: -0.05em;
-    margin-bottom: var(--sp-3);
-    user-select: none;
-  }
-
-  /* Stats grid */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--sp-1);
-  }
-
-  .stat {
-    padding: var(--sp-5) var(--sp-4);
-    border: 1px solid var(--stone-3);
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-  }
-
-  .stat--wide {
-    grid-column: span 2;
-  }
-
-  .stat__val {
-    font-family: var(--font-display);
-    font-size: clamp(1.85rem, 2.6vw, 2.75rem);
-    font-weight: 400;
-    letter-spacing: -0.02em;
-    color: var(--oxblood);
-    line-height: 1;
-  }
-
-  .stat__val--name {
-    font-size: clamp(1rem, 1.5vw, 1.3rem);
-    letter-spacing: -0.01em;
-    line-height: 1.3;
-    color: var(--ink);
-  }
-
-  .stat__label {
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: var(--tracking-caps);
-    text-transform: uppercase;
-    color: var(--ink-faint);
-  }
-
-  /* ── Row 3: Row header ────────────────────────────────────────────────────── */
-  .row-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: var(--sp-6);
-  }
-
-  .row-header__title {
-    color: var(--ink-mute);
-  }
-
-  .row-header__link {
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    text-decoration: none;
-    letter-spacing: var(--tracking-caps);
-    transition: color var(--dur-base) var(--ease-io);
-  }
-
-  .row-header__link:hover {
-    color: var(--ink-mute);
-  }
-
-  /* Featured grid — 2 columns */
-  .feat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-4);
-  }
-
-  /* ── Category list ────────────────────────────────────────────────────────── */
-  .cat-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .cat-list-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--sp-4) 0;
-    border-bottom: 1px solid var(--stone-3);
-    text-decoration: none;
-    color: var(--ink);
-    gap: var(--sp-3);
-    transition: color var(--dur-base) var(--ease-io);
-  }
-
-  .cat-list-item:first-child {
-    border-top: 1px solid var(--stone-3);
-  }
-
-  .cat-list-item:hover {
-    color: var(--oxblood);
-  }
-
-  .cat-list-item__left {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-3);
-    min-width: 0;
-  }
-
-  .cat-list-item__icon {
-    font-size: 1.1rem;
-    flex-shrink: 0;
-    width: 1.5rem;
-    text-align: center;
-  }
-
-  :global(.cat-icon) {
-    flex-shrink: 0;
-    width: 1.5rem;
-    height: 1.5rem;
-    color: var(--ink-faint);
-    transition: color var(--dur-base) var(--ease-io);
-  }
-
-  .cat-list-item:hover :global(.cat-icon) {
-    color: var(--oxblood);
-  }
-
-  .cat-list-item__name {
-    font-family: var(--font-display);
-    font-size: var(--text-lg);
-    font-weight: 400;
-    letter-spacing: var(--tracking-tight);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .cat-list-item__count {
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: var(--tracking-caps);
-    color: var(--ink-faint);
-    flex-shrink: 0;
-  }
-
-  /* ── End note ─────────────────────────────────────────────────────────────── */
-  .endnote {
-    background: var(--stone-3);
-    border-top: 1px solid var(--stone-4);
-  }
-
-  .endnote__inner {
-    max-width: var(--container);
-    margin-inline: auto;
-    padding-inline: var(--sp-6);
-    padding-block: clamp(5rem, 9vw, 8rem);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: clamp(1.5rem, 3vw, 2.5rem);
-  }
-
-  .endnote__text {
-    font-family: var(--font-display);
-    font-size: clamp(1.1rem, 1.8vw, 1.5rem);
-    font-weight: 400;
-    font-style: italic;
-    color: var(--ink-mute);
-    line-height: 1.5;
-    max-width: 54ch;
-  }
-
-  /* ── Responsive ──────────────────────────────────────────────────────────── */
-  @media (max-width: 900px) {
-    .hrow__inner {
-      grid-template-columns: 1fr;
-    }
-
-    .hrow--hero {
-      min-height: auto;
-    }
-
-    .hrow__left {
-      border-right: none;
-      border-bottom: 1px solid var(--stone-3);
-      padding-right: 0;
-      padding-bottom: clamp(2rem, 4vw, 3rem);
-    }
-
-    .hrow__right {
-      padding-left: 0;
-      padding-top: clamp(2rem, 4vw, 3rem);
-    }
-
-    /* Hide timeline on mobile */
-    .hrow__right--timeline {
-      display: none;
-    }
-
-    .feat-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .endnote__inner {
-      min-height: auto;
-      flex-direction: column;
-      gap: var(--sp-6);
-    }
-  }
-
-  @media (max-width: 560px) {
-    .feat-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>

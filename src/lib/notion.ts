@@ -1,14 +1,56 @@
 import { Client } from '@notionhq/client';
 import { ensureImagesDir, downloadPrimary, downloadGallery, downloadCategoryImage } from './images';
 import { fetchAllBlocks, renderBlocks, plainText } from './richtext';
-import type { Item, Category, SiteData } from './types';
+import type { Item, Category, Narrative, SiteData } from './types';
 
 const DATA_SOURCES = {
   items: '91ecf100-9c66-4f70-a03a-a11e0dfd2d20',
   categories: 'c9651011-b65b-419f-8fb5-80a4a70a9289',
+  narratives: 'fb3b85da-d3a8-4c39-a85b-a70648d55b92',
 } as const;
 
 const ABOUT_PAGE_ID = '36356d83-11d2-804e-b7a8-c2494f19a19c';
+
+// Public policy / archive pages maintained as Notion sub-pages
+export const POLICY_PAGES = {
+  'collecting-policy': {
+    id: '37b56d83-11d2-816c-928d-f1a4969f03c9',
+    title: 'Collecting Policy',
+    kicker: 'The Archive',
+    description:
+      'The public scope statement of The Meridian: the two collecting threads — Sri Lanka across every century, and the instruments of measurement and record — and the upgrade-only growth doctrine.',
+  },
+  'verification-and-provenance': {
+    id: '37b56d83-11d2-81ef-91c7-cd60952e77cf',
+    title: 'Verification & Provenance',
+    kicker: 'The Archive',
+    description:
+      'The authentication standard of The Meridian: how every object is verified or researched into verifiability, and what the per-item Verified and Research Ongoing labels mean.',
+  },
+  'seeking': {
+    id: '37b56d83-11d2-819e-8a0c-f80eb5c6bdf4',
+    title: 'Seeking',
+    kicker: 'The Archive',
+    description:
+      'The public want list of The Meridian: Ceylon photographs, documents and autographs, and scientific instruments the archive is actively seeking.',
+  },
+  'access-citation-image-use': {
+    id: '37b56d83-11d2-813d-8154-d17d0b0dcaea',
+    title: 'Access, Citation & Image Use',
+    kicker: 'The Archive',
+    description:
+      'Research inquiries, viewing arrangements, citation format, and the image licence for The Meridian archive.',
+  },
+  'annual-review': {
+    id: '37b56d83-11d2-81c2-be54-cd114f24a4a7',
+    title: 'Annual Review',
+    kicker: 'The Archive',
+    description:
+      'What the collection learned this year — one paragraph each June, published since the founding of The Meridian.',
+  },
+} as const;
+
+export type PolicySlug = keyof typeof POLICY_PAGES;
 
 function notionClient(): Client {
   const token = (import.meta.env.NOTION_TOKEN as string | undefined) ?? process.env.NOTION_TOKEN;
@@ -133,13 +175,15 @@ async function queryDataSource(client: Client, dataSourceId: string): Promise<an
   return results;
 }
 
+
 export async function fetchSiteData(): Promise<SiteData> {
   ensureImagesDir();
   const client = notionClient();
 
-  const [rawItems, rawCategories, aboutBlocks] = await Promise.all([
+  const [rawItems, rawCategories, rawNarratives, aboutBlocks] = await Promise.all([
     queryDataSource(client, DATA_SOURCES.items),
     queryDataSource(client, DATA_SOURCES.categories),
+    queryDataSource(client, DATA_SOURCES.narratives),
     fetchAllBlocks(client, ABOUT_PAGE_ID),
   ]);
 
@@ -200,6 +244,9 @@ export async function fetchSiteData(): Promise<SiteData> {
         materials: getText(props, 'Materials'),
         dimensions: getText(props, 'Dimensions'),
         condition: getSelect(props, 'Condition'),
+        provenance: getText(props, 'Provenance'),
+        verification: getSelect(props, 'Verification'),
+        narrativeIds: getRelationIds(props, 'Narratives'),
         primaryImage,
         galleryImages,
         imageAltText: getText(props, 'Image Alt Text'),
@@ -211,9 +258,37 @@ export async function fetchSiteData(): Promise<SiteData> {
     })
   );
 
+  // Narratives — connected stories across objects
+  const narratives: Narrative[] = rawNarratives.map((page: any) => {
+    const props = page.properties;
+    const slug = getText(props, 'Slug') || getTitle(props, 'Name').toLowerCase().replace(/\s+/g, '-');
+    return {
+      id: page.id,
+      slug,
+      name: getTitle(props, 'Name'),
+      premise: getText(props, 'Premise'),
+      displayOrder: getNumber(props, 'Display Order'),
+      publishStatus: getSelect(props, 'Publish Status'),
+      itemIds: getRelationIds(props, 'Items'),
+    } satisfies Narrative;
+  });
+
   const aboutHtml = renderBlocks(aboutBlocks);
 
-  return { items, categories, aboutHtml };
+  return { items, categories, narratives, aboutHtml };
+}
+
+// Fetches the full block content for a policy page (cached per page).
+const _policyCache = new Map<string, string>();
+
+export async function fetchPolicyContent(slug: PolicySlug): Promise<string> {
+  const cached = _policyCache.get(slug);
+  if (cached) return cached;
+  const client = notionClient();
+  const blocks = await fetchAllBlocks(client, POLICY_PAGES[slug].id);
+  const html = renderBlocks(blocks);
+  _policyCache.set(slug, html);
+  return html;
 }
 
 // Fetches the full block content for a single item page.
