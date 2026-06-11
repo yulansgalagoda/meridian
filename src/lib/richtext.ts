@@ -1,3 +1,29 @@
+// Known Notion page ids (dashless) → site routes, for link-to-page mentions.
+const PAGE_ROUTES: Record<string, string> = {
+  '37b56d8311d2816c928df1a4969f03c9': '/collecting-policy',
+  '37b56d8311d281ef91c7cd60952e77cf': '/verification-and-provenance',
+  '37b56d8311d2819e8a0cf80eb5c6bdf4': '/seeking',
+  '37b56d8311d2813d8154d17d0b0dcaea': '/access-citation-image-use',
+  '37b56d8311d281c2be54cd114f24a4a7': '/annual-review',
+  '36356d8311d2804eb7a8c2494f19a19c': '/about',
+};
+
+// Normalises link targets so internal links stay on the site.
+// Notion rewrites links typed as "/seeking" etc. to app.notion.com URLs,
+// and absolute meridian.yulan.me links should be relative.
+function normalizeHref(href: string): { href: string; internal: boolean } {
+  let h = href
+    .replace(/^https?:\/\/(app\.notion\.com|www\.notion\.so|notion\.so)\//, '/')
+    .replace(/^https?:\/\/meridian\.yulan\.me\//, '/');
+  // Notion link-to-page: "/p/<id>" or "/<id>" (32 hex chars, possibly suffixed)
+  const idMatch = h.match(/^\/(?:p\/)?([0-9a-f]{32})/);
+  if (idMatch && PAGE_ROUTES[idMatch[1]]) {
+    return { href: PAGE_ROUTES[idMatch[1]], internal: true };
+  }
+  if (h.startsWith('/')) return { href: h, internal: true };
+  return { href: h, internal: false };
+}
+
 // Renders Notion rich text spans to HTML.
 export function renderSpans(spans: any[]): string {
   if (!spans?.length) return '';
@@ -13,7 +39,10 @@ export function renderSpans(spans: any[]): string {
       if (span.annotations?.code) text = `<code>${text}</code>`;
       if (span.annotations?.strikethrough) text = `<s>${text}</s>`;
       if (span.href) {
-        text = `<a href="${span.href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        const { href, internal } = normalizeHref(span.href);
+        text = internal
+          ? `<a href="${href}">${text}</a>`
+          : `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
       }
       return text;
     })
