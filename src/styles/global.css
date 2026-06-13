@@ -3,11 +3,13 @@
 
 /* ── Tokens — The Cartographer's Desk ───────────────────────────────────────── */
 :root {
-  --stone:          #F4EFE6;
-  --stone-2:        #ECE5D6;
-  --stone-3:        #E2DAC8;
-  --stone-4:        #C9BCA4;
+  /* Paper surfaces */
+  --stone:          #F4EFE6;   /* paper — primary background */
+  --stone-2:        #ECE5D6;   /* deep paper — cards, tinted sections */
+  --stone-3:        #E2DAC8;   /* plate background, image wells */
+  --stone-4:        #C9BCA4;   /* warm border tone */
 
+  /* Dark surfaces (lightbox, rare accents) */
   --dark:           #261C12;
   --dark-2:         #322618;
   --dark-3:         #473826;
@@ -15,11 +17,13 @@
   --on-dark:        #EDE8DE;
   --on-dark-mute:   rgba(237, 232, 222, 0.6);
 
+  /* Ink — tuned for contrast on paper */
   --ink:            #261C12;
   --ink-soft:       #43362A;
   --ink-mute:       #5A4936;
   --ink-faint:      #66543F;
 
+  /* Accents */
   --oxblood:        #7A2E22;
   --oxblood-2:      #8E3A2C;
   --oxblood-light:  #C08A7B;
@@ -32,10 +36,12 @@
 
   --surface:        #FFFFFF;
 
+  /* Typography */
   --font-display: "EB Garamond", "Garamond", Georgia, serif;
   --font-body:    "EB Garamond", "Garamond", Georgia, serif;
   --font-mono:    "IBM Plex Mono", "Courier New", monospace;
 
+  /* Type scale */
   --text-xs:      clamp(0.6875rem, 0.65rem + 0.2vw, 0.75rem);
   --text-sm:      clamp(0.875rem, 0.83rem + 0.25vw, 0.9375rem);
   --text-base:    clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
@@ -45,17 +51,20 @@
   --text-2xl:     clamp(2rem, 1.6rem + 2vw, 2.875rem);
   --text-display: clamp(2.75rem, 2.1rem + 3vw, 4.25rem);
 
+  /* Line heights */
   --lh-tight:  1.1;
   --lh-snug:   1.25;
   --lh-base:   1.6;
   --lh-loose:  1.75;
 
+  /* Tracking */
   --tracking-tight:   -0.01em;
   --tracking-base:    0;
   --tracking-wide:    0.06em;
   --tracking-caps:    0.16em;
   --tracking-caps-xl: 0.3em;
 
+  /* Spacing */
   --sp-1:   0.25rem;
   --sp-2:   0.5rem;
   --sp-3:   0.75rem;
@@ -74,6 +83,7 @@
   --container:        77.5rem;
   --container-narrow: 48rem;
 
+  /* Motion — calm */
   --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
   --ease-io:    cubic-bezier(0.4, 0, 0.2, 1);
   --dur-fast:   200ms;
@@ -81,6 +91,7 @@
   --dur-slow:   600ms;
   --dur-luxury: 900ms;
 
+  /* Shadows */
   --shadow-card: 0 1px 2px rgba(38, 28, 18, 0.04), 0 4px 16px rgba(38, 28, 18, 0.05);
   --shadow-lift: 0 2px 4px rgba(38, 28, 18, 0.06), 0 12px 32px rgba(38, 28, 18, 0.09);
 }
@@ -571,6 +582,63 @@ h1, h2, h3, h4 {
   font-style: italic;
   color: var(--ink-soft);
 }
+
+/* ── Category cards (fields) ────────────────────────────────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-6);
+}
+
+.cat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  background: var(--stone-2);
+  border: 1px solid var(--rule);
+  padding: var(--sp-6);
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--dur-base) var(--ease-io), border-color var(--dur-base) var(--ease-io);
+}
+.cat-card:hover { transform: translateY(-4px); border-color: var(--gold); color: inherit; }
+
+.cat-card__icon {
+  display: flex;
+  color: var(--oxblood);
+  margin-bottom: var(--sp-1);
+}
+.cat-card__icon .cat-icon { width: 2.25rem; height: 2.25rem; }
+
+.cat-card__name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  line-height: var(--lh-snug);
+  color: var(--ink);
+}
+
+.cat-card__desc {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  line-height: var(--lh-base);
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cat-card__count {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: var(--sp-1);
+}
+.cat-card:hover .cat-card__count { color: var(--oxblood); }
 
 /* ── Narratives ─────────────────────────────────────────────────────────────── */
 .narr-grid {
@@ -1082,16 +1150,20 @@ h1, h2, h3, h4 {
 .item-intro__img {
   background: var(--stone-2);
   border: 1px solid var(--rule);
-  padding: clamp(1.5rem, 3.5vw, 3.5rem);
+  padding: clamp(1rem, 2.5vw, 2rem);
   display: flex;
+  align-items: center;
   justify-content: center;
+  min-height: clamp(20rem, 42vw, 34rem);
   cursor: zoom-in;
 }
 
 .item-intro__img img {
-  max-height: 60vh;
+  width: 100%;
+  height: auto;
+  max-height: 66vh;
   object-fit: contain;
-  filter: sepia(0.06) drop-shadow(0 20px 30px rgba(38, 28, 18, 0.22));
+  filter: sepia(0.06) drop-shadow(0 18px 28px rgba(38, 28, 18, 0.2));
 }
 
 .item-intro__placeholder {
@@ -1524,6 +1596,7 @@ h1, h2, h3, h4 {
   .site-footer__grid { grid-template-columns: 1fr; gap: var(--sp-8); }
   .plate-grid { grid-template-columns: 1fr; }
   .narr-grid { grid-template-columns: 1fr; }
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .item-intro { grid-template-columns: 1fr; gap: var(--sp-8); }
   .obj-card { margin-inline: 0; grid-template-columns: 1fr; }
   #meridian-arc .nm { display: none; }
@@ -1541,6 +1614,8 @@ h1, h2, h3, h4 {
 
   .filter-group { flex-direction: column; gap: var(--sp-3); }
   .filter-group__label { min-width: unset; }
+
+  .cat-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 400px) {

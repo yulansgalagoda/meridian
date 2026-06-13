@@ -3,9 +3,17 @@ import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MeridianArc from '../components/MeridianArc.astro';
+import CategoryIcon from '../components/CategoryIcon.astro';
 import { getSiteData } from '../lib/notion';
 
-const { items, narratives } = await getSiteData();
+const { items, categories, narratives } = await getSiteData();
+
+// Fields with at least one object, in display order
+const fields = categories
+  .filter((c) => c.publishStatus === 'Published')
+  .map((c) => ({ ...c, count: items.filter((i) => i.categorySlug === c.slug).length }))
+  .filter((c) => c.count > 0)
+  .sort((a, b) => a.displayOrder - b.displayOrder);
 
 // Featured plates — up to 3 for the vitrine row
 const featured = items.filter((i) => i.featured && i.primaryImage).slice(0, 3);
@@ -123,6 +131,31 @@ const jsonLd = [
                 <p class="plate__num">{plateLabel(item)}</p>
                 <h3 class="plate__name">{item.name}</h3>
                 {item.shortDescription && <p class="plate__meta">{item.shortDescription}</p>}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ── Fields of the collection ──────────────────────────────────────── -->
+    {fields.length > 0 && (
+      <section class="section-gap--sm" aria-label="Fields of the collection">
+        <div class="container">
+          <div class="plates-head">
+            <h2>Fields of the collection</h2>
+            <div class="plates-head__rule" aria-hidden="true"></div>
+            <a href="/categories">All fields →</a>
+          </div>
+          <div class="cat-grid">
+            {fields.map((cat) => (
+              <a class="cat-card reveal" href={`/categories/${cat.slug}`}>
+                <span class="cat-card__icon" aria-hidden="true">
+                  <CategoryIcon slug={cat.slug} />
+                </span>
+                <h3 class="cat-card__name">{cat.name}</h3>
+                {cat.description && <p class="cat-card__desc">{cat.description}</p>}
+                <span class="cat-card__count">{cat.count} {cat.count === 1 ? 'object' : 'objects'} →</span>
               </a>
             ))}
           </div>

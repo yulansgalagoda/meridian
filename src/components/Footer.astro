@@ -1,13 +1,19 @@
 ---
+import { getSiteData } from '../lib/notion';
+
 interface Props {
   itemCount?: number;
 }
 const { itemCount } = Astro.props;
 const year = new Date().getFullYear();
 
+const { narratives } = await getSiteData();
+const hasNarratives = narratives.some((n) => n.publishStatus === 'Published');
+
 const explore = [
   { href: '/collection', label: 'Collection' },
-  { href: '/narratives', label: 'Narratives' },
+  { href: '/categories', label: 'Categories' },
+  ...(hasNarratives ? [{ href: '/narratives', label: 'Narratives' }] : []),
   { href: '/about', label: 'About' },
 ];
 

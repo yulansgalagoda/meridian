@@ -1,0 +1,75 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CategoryIcon from '../../components/CategoryIcon.astro';
+import { getSiteData } from '../../lib/notion';
+
+const { items, categories } = await getSiteData();
+
+const cats = categories
+  .filter((c) => c.publishStatus === 'Published')
+  .sort((a, b) => a.displayOrder - b.displayOrder)
+  .map((c) => ({
+    ...c,
+    count: items.filter((i) => i.categorySlug === c.slug).length,
+  }))
+  .filter((c) => c.count > 0);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Fields of the Collection — The Meridian',
+  url: 'https://meridian.yulan.me/categories',
+  description: `The ${cats.length} fields that organise The Meridian archive — from antiquarian books to scientific instruments, navigation and cartography, optics and photography.`,
+  isPartOf: { '@type': 'WebSite', name: 'The Meridian', url: 'https://meridian.yulan.me' },
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: cats.length,
+    itemListElement: cats.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      url: `https://meridian.yulan.me/categories/${c.slug}`,
+    })),
+  },
+};
+---
+
+<Base
+  title="Categories"
+  description={`Browse The Meridian by field: ${cats.map((c) => c.name).join(', ')}. Each field gathers the antiques and historical objects of the archive by what they are and what they were for.`}
+  jsonLd={jsonLd}
+>
+  <Header />
+
+  <main>
+    <div class="container" style="padding-bottom: clamp(4rem, 8vw, 7rem)">
+      <header class="page-header">
+        <p class="eyebrow eyebrow--accent">The Collection</p>
+        <h1 class="page-header__title">Fields of the collection</h1>
+        <p class="page-header__desc">
+          The archive is read along its categories — each field gathers objects by what they are
+          and what they were for. {items.length} objects across {cats.length} fields.
+        </p>
+      </header>
+
+      <div class="cat-grid">
+        {cats.map((cat) => (
+          <a class="cat-card reveal" href={`/categories/${cat.slug}`}>
+            <span class="cat-card__icon" aria-hidden="true">
+              <CategoryIcon slug={cat.slug} />
+            </span>
+            <h2 class="cat-card__name">{cat.name}</h2>
+            {cat.description && <p class="cat-card__desc">{cat.description}</p>}
+            <span class="cat-card__count">{cat.count} {cat.count === 1 ? 'object' : 'objects'} →</span>
+          </a>
+        ))}
+      </div>
+
+      {cats.length === 0 && <p class="no-results">No fields yet.</p>}
+    </div>
+  </main>
+
+  <Footer itemCount={items.length} />
+</Base>
