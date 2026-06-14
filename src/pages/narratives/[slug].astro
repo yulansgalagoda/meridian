@@ -134,6 +134,9 @@ const jsonLd = [
       <p class="narr-hero__kicker">Narrative · {ROMAN[index] ?? index + 1}</p>
       <h1 class="narr-hero__title">{narrative.name}</h1>
       {narrative.premise && <p class="narr-hero__premise">{narrative.premise}</p>}
+      {linkedItems.length > 0 && (
+        <p class="narr-hero__byline">A narrative across {linkedItems.length} {linkedItems.length === 1 ? 'object' : 'objects'} · The Meridian</p>
+      )}
 
       {constPoints.length > 1 && (
         <svg
@@ -162,7 +165,7 @@ const jsonLd = [
 
       {unplaced.length > 0 && (
         <>
-          <div class="prose-page__orn" aria-hidden="true" style="margin-block: var(--sp-10);">✦</div>
+          <div class="sec-head"><span>Also in this narrative</span></div>
           {unplaced.map((item, i) => (
             <Fragment set:html={cardHtml(item, witnessCounter + i)} />
           ))}

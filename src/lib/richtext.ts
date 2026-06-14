@@ -54,6 +54,33 @@ export function plainText(spans: any[]): string {
   return spans.map((s) => s.plain_text ?? '').join('');
 }
 
+// ── Inline image convention ──────────────────────────────────────────────────
+// A paragraph whose entire text is a braced link becomes a figure, so editors
+// can drop standalone images (author portraits, maps, scenes) into prose without
+// touching code. Kept out of mid-sentence so the newspaper layout stays clean.
+//   {https://example.com/pic.jpg}
+//   {https://example.com/pic.jpg | A caption beneath the image}
+//   {https://example.com/pic.jpg | A wide banner caption | wide}   ← spans all columns
+function attr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+function escText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+export function parseFigure(raw: string): string | null {
+  const m = raw
+    .trim()
+    .match(/^\{\s*(https?:\/\/[^\s|}]+)\s*(?:\|\s*([^|}]+?))?\s*(?:\|\s*(wide|full))?\s*\}$/i);
+  if (!m) return null;
+  const url = attr(m[1]);
+  const caption = (m[2] ?? '').trim();
+  const wide = Boolean(m[3]);
+  const cls = wide ? 'narr-figure narr-figure--wide' : 'narr-figure';
+  const alt = attr(caption || 'Illustration');
+  const figcaption = caption ? `<figcaption>${escText(caption)}</figcaption>` : '';
+  return `<figure class="${cls}"><img src="${url}" alt="${alt}" loading="lazy" decoding="async">${figcaption}</figure>\n`;
+}
+
 // Fetches all blocks for a page, handling pagination.
 import { Client } from '@notionhq/client';
 
@@ -96,6 +123,8 @@ export function renderBlocks(blocks: any[]): string {
 
     switch (block.type) {
       case 'paragraph': {
+        const figure = parseFigure(plainText(block.paragraph.rich_text));
+        if (figure) { closeLists(); html += figure; break; }
         const text = renderSpans(block.paragraph.rich_text);
         if (text.trim()) html += `<p>${text}</p>\n`;
         break;
