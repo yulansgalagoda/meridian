@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import ItemCard from '../../components/ItemCard.astro';
 import { getSiteData, fetchItemContent } from '../../lib/notion';
 
 export async function getStaticPaths() {
@@ -17,19 +18,17 @@ export async function getStaticPaths() {
 }
 
 const { item, prevItem, nextItem } = Astro.props;
-const { narratives } = await getSiteData();
+const { items, narratives } = await getSiteData();
 const bodyHtml = await fetchItemContent(item.id);
 
-const allImages = [
-  ...(item.primaryImage ? [item.primaryImage] : []),
-  ...item.galleryImages,
-];
+const allImages = [...(item.primaryImage ? [item.primaryImage] : []), ...item.galleryImages];
 
-// Narratives this object appears in (Published only)
 const dashless = (s: string) => s.replace(/-/g, '');
 const itemNarratives = narratives.filter(
   (n) => n.publishStatus === 'Published' && item.narrativeIds.includes(dashless(n.id))
 );
+
+const related = items.filter((i) => i.id !== item.id && item.categorySlug && i.categorySlug === item.categorySlug).slice(0, 3);
 
 const yearLabel = item.year !== null
   ? (item.year < 0 ? `${Math.abs(item.year)} BCE` : String(item.year))
@@ -42,7 +41,7 @@ const wallRows = [
   { label: 'Materials', value: item.materials || null },
   { label: 'Dimensions', value: item.dimensions || null },
   { label: 'Condition', value: item.condition || null },
-  { label: 'Category', value: item.categoryName || null },
+  { label: 'Field', value: item.categoryName || null },
 ].filter((f) => f.value !== null);
 
 const verificationClass =
@@ -50,274 +49,139 @@ const verificationClass =
   : item.verification === 'Research Ongoing' ? 'badge--research'
   : item.verification === 'Unverified' ? 'badge--unverified'
   : null;
+const verificationMark = item.verification === 'Verified' ? '✓' : item.verification ? '◌' : '';
 
-const verificationMark =
-  item.verification === 'Verified' ? '✓' : item.verification ? '◌' : '';
+const bylineParts = [
+  item.categoryName ? `From the ${item.categoryName} Shelf` : null,
+  item.dateDetail || yearLabel,
+].filter(Boolean);
 
-// ── SEO ──────────────────────────────────────────────────────────────────────
 const pageUrl = `https://meridian.yulan.me/collection/${item.slug}`;
 const seoDescription = item.shortDescription || item.story || `${item.name} — an object in The Meridian archive.`;
 
 const creativeWork: Record<string, unknown> = {
-  '@context': 'https://schema.org',
-  '@type': 'CreativeWork',
-  name: item.name,
-  url: pageUrl,
-  description: seoDescription,
+  '@context': 'https://schema.org', '@type': 'CreativeWork', name: item.name, url: pageUrl, description: seoDescription,
   ...(item.primaryImage && { image: `https://meridian.yulan.me${item.primaryImage}` }),
   ...(item.year !== null && { dateCreated: String(item.year) }),
   ...(item.maker && { creator: { '@type': 'Organization', name: item.maker } }),
   ...(item.materials && { material: item.materials }),
   ...(item.originCountry && { countryOfOrigin: { '@type': 'Country', name: item.originCountry } }),
   ...(item.tags.length && { keywords: item.tags.join(', ') }),
-  isPartOf: {
-    '@type': 'Collection',
-    name: 'The Meridian Collection',
-    url: 'https://meridian.yulan.me/collection',
-  },
+  isPartOf: { '@type': 'Collection', name: 'The Meridian Collection', url: 'https://meridian.yulan.me/collection' },
 };
-
 const breadcrumbs = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Collection', item: 'https://meridian.yulan.me/collection' },
-    ...(item.categoryName && item.categorySlug
-      ? [{ '@type': 'ListItem', position: 2, name: item.categoryName, item: `https://meridian.yulan.me/categories/${item.categorySlug}` }]
-      : []),
+    ...(item.categoryName && item.categorySlug ? [{ '@type': 'ListItem', position: 2, name: item.categoryName, item: `https://meridian.yulan.me/categories/${item.categorySlug}` }] : []),
     { '@type': 'ListItem', position: item.categoryName ? 3 : 2, name: item.name, item: pageUrl },
   ],
 };
 ---
 
-<Base
-  title={item.name}
-  description={seoDescription}
-  image={item.primaryImage ?? undefined}
-  type="article"
-  jsonLd={[creativeWork, breadcrumbs]}
->
+<Base title={item.name} description={seoDescription} image={item.primaryImage ?? undefined} type="article" jsonLd={[creativeWork, breadcrumbs]}>
   <Header />
 
   <main class="item-page">
     <div class="container">
-
-      <!-- Breadcrumb -->
-      <nav class="item-back" aria-label="Breadcrumb">
-        <a href="/collection" class="item-back__link">
-          <svg viewBox="0 0 10 8" width="10" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <path d="M9 4H1M4 1L1 4l3 3"/>
-          </svg>
-          Collection
-        </a>
-        {item.categoryName && item.categorySlug && (
-          <>
-            <span class="item-back__sep" aria-hidden="true">/</span>
-            <a href={`/categories/${item.categorySlug}`} class="item-back__link">
-              {item.categoryName}
-            </a>
-          </>
-        )}
+      <nav class="crumb" aria-label="Breadcrumb">
+        <a href="/collection">Collection</a>
+        {item.categoryName && item.categorySlug && (<><span class="sep">/</span><a href={`/categories/${item.categorySlug}`}>{item.categoryName}</a></>)}
       </nav>
 
-      <!-- ── Intro: image + wall label ───────────────────────────────────── -->
-      <div class="item-intro">
-        <div>
-          <div class="item-intro__img" id="lightbox-trigger">
-            {item.primaryImage ? (
-              <img
-                src={item.primaryImage}
-                alt={item.imageAltText || item.name}
-                loading="eager"
-                decoding="async"
-                id="primary-img"
-              />
-            ) : (
-              <div class="item-intro__placeholder">
-                {yearLabel && <span class="placeholder__year">{yearLabel}</span>}
-                <span class="placeholder__label">No photograph</span>
-              </div>
-            )}
-          </div>
-
-          {allImages.length > 1 && (
-            <div class="gallery-strip" id="gallery-strip">
-              {allImages.map((src, i) => (
-                <img
-                  src={src}
-                  alt={`${item.name} — view ${i + 1}`}
-                  class={`gallery-thumb${i === 0 ? ' is-active' : ''}`}
-                  loading="lazy"
-                  decoding="async"
-                  data-index={i}
-                  data-src={src}
-                />
-              ))}
-            </div>
-          )}
+      <article>
+        <div class="art-head">
+          {item.categoryName && <p class="art-kicker">{item.categoryName}</p>}
+          <h1>{item.name}</h1>
+          {item.shortDescription && <p class="art-deck">{item.shortDescription}</p>}
+          <p class="art-byline">
+            <span>{bylineParts.join(' · ')}</span>
+            {verificationClass && <span class={`badge ${verificationClass}`}>{verificationMark} {item.verification}</span>}
+          </p>
         </div>
 
-        <div>
-          <h1 class="item-intro__name">{item.name}</h1>
-          {item.shortDescription && (
-            <p class="item-intro__short">{item.shortDescription}</p>
+        <figure class="art-figure" id="lightbox-trigger">
+          {item.primaryImage ? (
+            <img src={item.primaryImage} alt={item.imageAltText || item.name} loading="eager" decoding="async" id="primary-img" />
+          ) : (
+            <div class="art-figure__placeholder">
+              {yearLabel && <span class="py">{yearLabel}</span>}
+              <span class="pl">No photograph</span>
+            </div>
           )}
+          {item.materials && item.primaryImage && <figcaption class="figcaption">{item.materials}</figcaption>}
+        </figure>
 
-          <div class="item-badges">
-            {verificationClass && (
-              <span class={`badge ${verificationClass}`} title="Verification status per the archive's charter">
-                {verificationMark} {item.verification}
-              </span>
-            )}
-            {item.era && (
-              <span class="badge badge--era">{item.era}{yearLabel ? ` · ${yearLabel}` : ''}</span>
-            )}
+        {allImages.length > 1 && (
+          <div class="gallery-strip" id="gallery-strip">
+            {allImages.map((src, i) => (
+              <img src={src} alt={`${item.name} — view ${i + 1}`} class={`gallery-thumb${i === 0 ? ' is-active' : ''}`} loading="lazy" decoding="async" data-src={src} />
+            ))}
           </div>
+        )}
 
-          {wallRows.length > 0 && (
-            <dl class="wall-label">
-              {wallRows.map((row) => (
-                <div class="wall-label__row">
-                  <dt class="wall-label__k">{row.label}</dt>
-                  <dd class="wall-label__v">{row.value}</dd>
-                </div>
-              ))}
+        {wallRows.length > 0 && (
+          <aside class="factbox factbox--wide">
+            <div class="factbox__head">The Wall Label</div>
+            <dl>
+              {wallRows.map((row) => (<div class="row"><dt>{row.label}</dt><dd>{row.value}</dd></div>))}
               {itemNarratives.length > 0 && (
-                <div class="wall-label__row">
-                  <dt class="wall-label__k">Narratives</dt>
-                  <dd class="wall-label__v">
-                    {itemNarratives.map((n, i) => (
-                      <>
-                        <a href={`/narratives/${n.slug}`}>{n.name}</a>{i < itemNarratives.length - 1 ? ', ' : ''}
-                      </>
-                    ))}
-                  </dd>
-                </div>
+                <div class="row"><dt>Narratives</dt><dd>{itemNarratives.map((n, i) => (<>{i ? ', ' : ''}<a href={`/narratives/${n.slug}`}>{n.name}</a></>))}</dd></div>
               )}
             </dl>
-          )}
-
-          {item.provenance && (
-            <div class="provenance">
-              <p class="provenance__k">Provenance</p>
-              <p>{item.provenance}</p>
-            </div>
-          )}
-
-          {item.tags.length > 0 && (
-            <div class="tag-list" style="margin-top: var(--sp-6);">
-              {item.tags.map((tag) => (
-                <span class="tag">{tag}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+          </aside>
+        )}
+      </article>
     </div>
 
-    <!-- ── Full description (entire Notion page body) ──────────────────────── -->
     <div class="container container--narrow">
-      {bodyHtml && (
-        <article class="item-body" set:html={bodyHtml} />
+      {bodyHtml && <article class="item-body" set:html={bodyHtml} />}
+
+      {item.provenance && (
+        <div class="provenance"><p class="provenance__k">Provenance</p><p>{item.provenance}</p></div>
       )}
+
+      {item.tags.length > 0 && (
+        <div class="tag-list">{item.tags.map((tag) => <span class="tag">{tag}</span>)}</div>
+      )}
+    </div>
+
+    {related.length > 0 && (
+      <div class="container">
+        <div class="sec-head"><span>Also in {item.categoryName}</span></div>
+        <div class="item-grid">{related.map((r) => <ItemCard item={r} />)}</div>
+      </div>
+    )}
+
+    {(prevItem || nextItem) && (
+      <div class="container container--narrow">
+        <div class="item-pagination">
+          <div class="item-pagination__inner">
+            {prevItem ? (
+              <a href={`/collection/${prevItem.slug}`} class="item-pagination__link">
+                <span class="item-pagination__label">← Previous</span>
+                <span class="item-pagination__name">{prevItem.name}</span>
+              </a>
+            ) : <div />}
+            {nextItem ? (
+              <a href={`/collection/${nextItem.slug}`} class="item-pagination__link item-pagination__link--next">
+                <span class="item-pagination__label">Next →</span>
+                <span class="item-pagination__name">{nextItem.name}</span>
+              </a>
+            ) : <div />}
+          </div>
+        </div>
+      </div>
+    )}
+
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+      <button class="lightbox__close" id="lightbox-close" aria-label="Close">✕</button>
+      <img class="lightbox__img" id="lightbox-img" src="" alt="" />
     </div>
   </main>
 
-  <!-- Prev / Next navigation -->
-  {(prevItem || nextItem) && (
-    <div class="item-pagination">
-      <div class="container container--narrow">
-        <div class="item-pagination__inner">
-          {prevItem ? (
-            <a href={`/collection/${prevItem.slug}`} class="item-pagination__link item-pagination__link--prev">
-              <svg viewBox="0 0 10 8" width="10" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 4H1M4 1L1 4l3 3"/></svg>
-              <span>
-                <span class="item-pagination__label">Previous</span>
-                <span class="item-pagination__name">{prevItem.name}</span>
-              </span>
-            </a>
-          ) : <div />}
-          {nextItem ? (
-            <a href={`/collection/${nextItem.slug}`} class="item-pagination__link item-pagination__link--next">
-              <span>
-                <span class="item-pagination__label">Next</span>
-                <span class="item-pagination__name">{nextItem.name}</span>
-              </span>
-              <svg viewBox="0 0 10 8" width="10" height="8" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 4h8M6 1l3 3-3 3"/></svg>
-            </a>
-          ) : <div />}
-        </div>
-      </div>
-    </div>
-  )}
-
-  <!-- Lightbox -->
-  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
-    <button class="lightbox__close" id="lightbox-close" aria-label="Close">
-      <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M1 1l12 12M13 1L1 13"/>
-      </svg>
-    </button>
-    <img class="lightbox__img" id="lightbox-img" src="" alt="" />
-  </div>
-
   <Footer />
 </Base>
-
-<style>
-  .item-pagination__inner {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--sp-6);
-  }
-
-  .item-pagination__link {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-4);
-    text-decoration: none;
-    color: var(--ink-mute);
-    transition: color var(--dur-base) var(--ease-io);
-  }
-
-  .item-pagination__link:hover { color: var(--oxblood); }
-
-  .item-pagination__link svg {
-    flex-shrink: 0;
-    color: var(--ink-faint);
-    transition: color var(--dur-base) var(--ease-io);
-  }
-
-  .item-pagination__link:hover svg { color: var(--oxblood); }
-
-  .item-pagination__link--next {
-    justify-content: flex-end;
-    text-align: right;
-  }
-
-  .item-pagination__link span {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
-  }
-
-  .item-pagination__label {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    font-weight: 500;
-    letter-spacing: var(--tracking-caps);
-    text-transform: uppercase;
-    color: var(--ink-faint);
-  }
-
-  .item-pagination__name {
-    font-family: var(--font-display);
-    font-size: var(--text-lg);
-    font-weight: 500;
-    line-height: 1.3;
-    max-width: 30ch;
-  }
-</style>
 
 <script>
   const primaryImg = document.getElementById('primary-img') as HTMLImageElement | null;
@@ -326,40 +190,22 @@ const breadcrumbs = {
   const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
   const closeBtn = document.getElementById('lightbox-close');
 
-  // Thumbnail swapping
   strip?.addEventListener('click', (e) => {
     const thumb = (e.target as Element).closest<HTMLElement>('.gallery-thumb');
     if (!thumb || !primaryImg) return;
-    const src = thumb.dataset.src!;
-    primaryImg.src = src;
+    primaryImg.src = thumb.dataset.src!;
     strip.querySelectorAll('.gallery-thumb').forEach((t) => t.classList.remove('is-active'));
     thumb.classList.add('is-active');
   });
 
-  // Lightbox
   function openLightbox(src: string, alt: string) {
-    lightboxImg.src = src;
-    lightboxImg.alt = alt;
-    lightbox.classList.add('is-open');
-    document.body.style.overflow = 'hidden';
+    lightboxImg.src = src; lightboxImg.alt = alt;
+    lightbox.classList.add('is-open'); document.body.style.overflow = 'hidden';
   }
+  function closeLightbox() { lightbox.classList.remove('is-open'); document.body.style.overflow = ''; }
 
-  function closeLightbox() {
-    lightbox.classList.remove('is-open');
-    document.body.style.overflow = '';
-  }
-
-  document.getElementById('lightbox-trigger')?.addEventListener('click', () => {
-    if (primaryImg) openLightbox(primaryImg.src, primaryImg.alt);
-  });
-
+  document.getElementById('lightbox-trigger')?.addEventListener('click', () => { if (primaryImg) openLightbox(primaryImg.src, primaryImg.alt); });
   closeBtn?.addEventListener('click', closeLightbox);
-
-  lightbox.addEventListener('click', (e) => {
-    if (e.target === lightbox) closeLightbox();
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeLightbox();
-  });
+  lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 </script>

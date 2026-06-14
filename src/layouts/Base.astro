@@ -39,6 +39,24 @@ const jsonLdBlocks = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
 
+    <!-- Edition (theme) + masthead — applied before paint to avoid flash -->
+    <script is:inline>
+      (function () {
+        try {
+          var p = new URLSearchParams(location.search);
+          var root = document.documentElement;
+          // Evening Edition
+          var ed = p.get('edition');
+          if (ed === 'evening' || ed === 'day') localStorage.setItem('meridian-edition', ed);
+          if (localStorage.getItem('meridian-edition') === 'evening') root.setAttribute('data-theme', 'evening');
+          // Masthead variant (preview)
+          var mh = p.get('masthead');
+          if (mh === 'black' || mh === 'caslon') localStorage.setItem('meridian-masthead', mh);
+          if (localStorage.getItem('meridian-masthead') === 'black') root.setAttribute('data-masthead', 'black');
+        } catch (e) {}
+      })();
+    </script>
+
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={url} />

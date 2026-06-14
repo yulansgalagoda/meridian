@@ -175,7 +175,6 @@ async function queryDataSource(client: Client, dataSourceId: string): Promise<an
   return results;
 }
 
-
 export async function fetchSiteData(): Promise<SiteData> {
   ensureImagesDir();
   const client = notionClient();

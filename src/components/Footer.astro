@@ -10,14 +10,11 @@ const year = new Date().getFullYear();
 const { narratives } = await getSiteData();
 const hasNarratives = narratives.some((n) => n.publishStatus === 'Published');
 
-const explore = [
+const links = [
   { href: '/collection', label: 'Collection' },
   { href: '/categories', label: 'Categories' },
   ...(hasNarratives ? [{ href: '/narratives', label: 'Narratives' }] : []),
   { href: '/about', label: 'About' },
-];
-
-const archive = [
   { href: '/collecting-policy', label: 'Collecting Policy' },
   { href: '/verification-and-provenance', label: 'Verification & Provenance' },
   { href: '/seeking', label: 'Seeking' },
@@ -26,39 +23,23 @@ const archive = [
 ];
 ---
 
-<footer class="site-footer">
+<footer class="colophon">
   <div class="container">
-    <div class="site-footer__grid">
-      <div>
-        <a href="/" class="site-footer__name"><span>✦</span> The Meridian</a>
-        <p class="site-footer__pali">
-          Vayadhammā saṅkhārā — all conditioned things are subject to decay.
-          <small>Mahāparinibbāna Sutta · Dīgha Nikāya 16</small>
-        </p>
+    <div class="colophon__inner">
+      <div class="colophon__block">
+        <strong>The Meridian</strong>{itemCount !== undefined && ` · ${itemCount} ${itemCount === 1 ? 'object' : 'objects'}`}<br />
+        Curated by <a class="lnk" href="https://yulan.me">Yulan Galagoda</a>
       </div>
-      <nav class="site-footer__col" aria-label="Explore">
-        <h4>Explore</h4>
-        <ul>
-          {explore.map(({ href, label }) => (
-            <li><a href={href}>{label}</a></li>
-          ))}
-        </ul>
+      <nav class="colophon__nav" aria-label="Footer navigation">
+        {links.map(({ href, label }) => <a href={href}>{label}</a>)}
       </nav>
-      <nav class="site-footer__col" aria-label="The Archive">
-        <h4>The Archive</h4>
-        <ul>
-          {archive.map(({ href, label }) => (
-            <li><a href={href}>{label}</a></li>
-          ))}
-        </ul>
-      </nav>
+      <div class="colophon__block">
+        <em>Vayadhammā saṅkhārā</em><br />
+        A Record, Not a Shop · {year}
+      </div>
     </div>
-    <div class="site-footer__base">
-      <span>{itemCount !== undefined && `${itemCount} ${itemCount === 1 ? 'object' : 'objects'} · `}YG · {year}</span>
-      <span>A record, not a shop</span>
-      <p class="site-footer__credit">
-        Designed by Yulan Galagoda · Built in collaboration with AI (Perplexity, Claude) on Astro and Notion · Hosted on Cloudflare Pages
-      </p>
-    </div>
+    <p class="colophon__credit">
+      Designed by Yulan Galagoda · Built in collaboration with AI (Perplexity, Claude) on Astro and Notion · Hosted on Cloudflare Pages
+    </p>
   </div>
 </footer>

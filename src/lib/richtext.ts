@@ -1,3 +1,6 @@
+// Normalises link targets so internal links stay on the site.
+// Notion rewrites links typed as "/seeking" etc. to app.notion.com URLs,
+// and absolute meridian.yulan.me links should be relative.
 // Known Notion page ids (dashless) → site routes, for link-to-page mentions.
 const PAGE_ROUTES: Record<string, string> = {
   '37b56d8311d2816c928df1a4969f03c9': '/collecting-policy',
@@ -8,9 +11,6 @@ const PAGE_ROUTES: Record<string, string> = {
   '36356d8311d2804eb7a8c2494f19a19c': '/about',
 };
 
-// Normalises link targets so internal links stay on the site.
-// Notion rewrites links typed as "/seeking" etc. to app.notion.com URLs,
-// and absolute meridian.yulan.me links should be relative.
 function normalizeHref(href: string): { href: string; internal: boolean } {
   let h = href
     .replace(/^https?:\/\/(app\.notion\.com|www\.notion\.so|notion\.so)\//, '/')

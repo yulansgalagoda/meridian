@@ -3,82 +3,52 @@ import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MeridianArc from '../components/MeridianArc.astro';
-import CategoryIcon from '../components/CategoryIcon.astro';
+import ItemCard from '../components/ItemCard.astro';
 import { getSiteData } from '../lib/notion';
 
 const { items, categories, narratives } = await getSiteData();
 
-// Fields with at least one object, in display order
+// Lead story — first featured object with an image, else first imaged object
+const featured = items.filter((i) => i.featured && i.primaryImage);
+const lead = featured[0] ?? items.find((i) => i.primaryImage) ?? items[0];
+
+const leadYear = lead?.year != null ? (lead.year < 0 ? `${Math.abs(lead.year)} BCE` : String(lead.year)) : null;
+const leadBylineParts = [
+  lead?.categoryName ? `From the ${lead.categoryName} Shelf` : null,
+  lead?.dateDetail || leadYear,
+  lead?.verification || null,
+].filter(Boolean);
+const leadStory = (lead?.story || lead?.shortDescription || '')
+  .split(/\n+/)
+  .map((p) => p.trim())
+  .filter(Boolean);
+
+// Fields with at least one object
 const fields = categories
   .filter((c) => c.publishStatus === 'Published')
   .map((c) => ({ ...c, count: items.filter((i) => i.categorySlug === c.slug).length }))
   .filter((c) => c.count > 0)
   .sort((a, b) => a.displayOrder - b.displayOrder);
 
-// Featured plates — up to 3 for the vitrine row
-const featured = items.filter((i) => i.featured && i.primaryImage).slice(0, 3);
-const plates = featured.length >= 3
-  ? featured
-  : [...featured, ...items.filter((i) => i.primaryImage && !featured.includes(i))].slice(0, 3);
+// More objects (exclude the lead)
+const more = items.filter((i) => i.id !== lead?.id).slice(0, 8);
 
 const publishedNarratives = narratives
   .filter((n) => n.publishStatus === 'Published')
   .sort((a, b) => a.displayOrder - b.displayOrder)
   .slice(0, 2);
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
 
 const years = items.map((i) => i.year).filter((y): y is number => y !== null);
 const minYear = years.length ? Math.min(...years) : null;
 const maxYear = years.length ? Math.max(...years) : null;
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-
-function plateLabel(item: (typeof items)[number]): string {
-  const parts: string[] = [];
-  if (item.year !== null) parts.push(item.dateDetail || String(item.year));
-  if (item.originCountry) parts.push(item.originCountry);
-  return parts.join(' · ');
-}
-
-const description = `The Meridian — a private archive of ${items.length} antiques and historical objects spanning ${minYear ?? ''} to ${maxYear ?? ''}: Sri Lanka and Ceylon across every century, and the instruments by which mankind learned to measure, record, calculate, and see. Maps, scientific instruments, rare books, photographs, and documents, each verified and documented.`;
+const description = `The Meridian — a private archive of ${items.length} antiques and historical objects spanning ${minYear ?? ''} to ${maxYear ?? ''}: Sri Lanka and Ceylon across every century, and the instruments by which mankind learned to measure, record, calculate, and see.`;
 
 const jsonLd = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'The Meridian',
-    alternateName: 'The Meridian Archive',
-    url: 'https://meridian.yulan.me',
-    description,
-    inLanguage: 'en',
-    publisher: { '@id': 'https://meridian.yulan.me/#curator' },
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Person',
-    '@id': 'https://meridian.yulan.me/#curator',
-    name: 'Yulan Galagoda',
-    url: 'https://yulan.me',
-    email: 'mailto:yulangalagoda1@gmail.com',
-    jobTitle: 'Curator',
-    knowsAbout: [
-      'Antiques',
-      'Sri Lanka history',
-      'Ceylon colonial history',
-      'Scientific instruments',
-      'Antiquarian books',
-      'Early photography',
-      'Cartography',
-      'Provenance research',
-    ],
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Collection',
-    name: 'The Meridian Collection',
-    url: 'https://meridian.yulan.me/collection',
-    description: `${items.length} antiques and historical objects, ${minYear ?? ''}–${maxYear ?? ''}.`,
-    collectionSize: items.length,
-  },
+  { '@context': 'https://schema.org', '@type': 'WebSite', name: 'The Meridian', alternateName: 'The Meridian Archive', url: 'https://meridian.yulan.me', description, inLanguage: 'en', publisher: { '@id': 'https://meridian.yulan.me/#curator' } },
+  { '@context': 'https://schema.org', '@type': 'Person', '@id': 'https://meridian.yulan.me/#curator', name: 'Yulan Galagoda', url: 'https://yulan.me', email: 'mailto:yulangalagoda1@gmail.com', jobTitle: 'Curator', knowsAbout: ['Antiques', 'Sri Lanka history', 'Ceylon colonial history', 'Scientific instruments', 'Antiquarian books', 'Early photography', 'Cartography', 'Provenance research'] },
+  { '@context': 'https://schema.org', '@type': 'Collection', name: 'The Meridian Collection', url: 'https://meridian.yulan.me/collection', description: `${items.length} antiques and historical objects, ${minYear ?? ''}–${maxYear ?? ''}.`, collectionSize: items.length },
 ];
 ---
 
@@ -86,107 +56,121 @@ const jsonLd = [
   <Header />
 
   <main>
-    <!-- ── Hero ──────────────────────────────────────────────────────────── -->
-    <section class="hero" aria-label="Introduction">
-      <div class="container">
-        <h1 class="hero__title">The Meridian</h1>
-        <p class="hero__kicker">A private archive of antiques &amp; historical objects</p>
+    <div class="container">
+      <!-- ── Front grid ──────────────────────────────────────────────── -->
+      <div class="front">
+        <article class="lead">
+          {lead && (
+            <>
+              {lead.categoryName && (
+                <p class="kicker lead__kicker">The Lead{lead.categoryName ? <><span class="sep">·</span>{lead.categoryName}</> : null}</p>
+              )}
+              <h1>{lead.name}</h1>
+              {lead.shortDescription && <p class="lead__deck">{lead.shortDescription}</p>}
+              {lead.primaryImage && (
+                <figure>
+                  <a href={`/collection/${lead.slug}`}>
+                    <img src={lead.primaryImage} alt={lead.imageAltText || lead.name} loading="eager" decoding="async" />
+                  </a>
+                  {lead.materials && <figcaption>{lead.materials}</figcaption>}
+                </figure>
+              )}
+              {leadBylineParts.length > 0 && <p class="lead__byline">{leadBylineParts.join(' · ')}</p>}
+              {leadStory.length > 0 && (
+                <div class="leadbody">
+                  {leadStory.map((p) => <p>{p}</p>)}
+                </div>
+              )}
+              <a class="lead__more" href={`/collection/${lead.slug}`}>Read the full account →</a>
+            </>
+          )}
+        </article>
+
+        <aside class="rail">
+          {fields.length > 0 && (
+            <div class="rail__module">
+              <div class="railhead">Fields of the Collection</div>
+              <ul class="almanac">
+                {fields.map((c) => (
+                  <li>
+                    <a href={`/categories/${c.slug}`}>
+                      <span class="a-name">{c.name}{c.description && <small>{c.description}</small>}</span>
+                      <span class="a-count">{String(c.count).padStart(2, '0')}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div class="rail__module">
+            <div class="epigraph-box">
+              <p class="epigraph-box__q" lang="pi">Vayadhammā saṅkhārā</p>
+              <p class="epigraph-box__t">All conditioned things are subject to decay.</p>
+              <p class="epigraph-box__s">
+                The Buddha's final words ·
+                <a href="https://suttacentral.net/dn16" target="_blank" rel="noopener">DN 16</a>
+              </p>
+            </div>
+          </div>
+
+          <div class="rail__module">
+            <div class="railhead">Notices · Seeking</div>
+            <ul class="seeking">
+              <li><span class="sk-cat">Ceylon Photography</span> Albumen views of Colombo, Kandy &amp; the hill country, c. 1860–1900.</li>
+              <li><span class="sk-cat">Documents &amp; Autographs</span> Ceylon civil-service papers and signed correspondence.</li>
+              <li><span class="sk-cat">Instruments</span> Pocket globes, orreries &amp; early aneroid barometers.</li>
+            </ul>
+            <a class="seeking-more" href="/seeking">The full want-list →</a>
+          </div>
+        </aside>
       </div>
-    </section>
+    </div>
 
-    <!-- ── Epigraph ──────────────────────────────────────────────────────── -->
-    <section class="epigraph" aria-label="Epigraph">
-      <div class="epigraph__orn" aria-hidden="true">✦</div>
-      <p class="epigraph__pali" lang="pi">Vayadhammā saṅkhārā</p>
-      <p class="epigraph__trans">All conditioned things are subject to decay.</p>
-      <p class="epigraph__source">
-        — The Buddha's final words ·
-        <a href="https://suttacentral.net/dn16" target="_blank" rel="noopener">Mahāparinibbāna Sutta, Dīgha Nikāya 16</a>
-      </p>
-    </section>
-
-    <!-- ── Rotating meridian line ────────────────────────────────────────── -->
+    <!-- ── The Meridian Line ───────────────────────────────────────────── -->
     <MeridianArc items={items} />
 
-    <!-- ── Vitrines ──────────────────────────────────────────────────────── -->
-    {plates.length > 0 && (
-      <section class="section-gap" aria-label="Selected objects">
-        <div class="container">
-          <div class="plates-head">
-            <h2>In the vitrines</h2>
-            <div class="plates-head__rule" aria-hidden="true"></div>
-            <a href="/collection">Full collection →</a>
-          </div>
-          <div class="plate-grid">
-            {plates.map((item) => (
-              <a class="plate reveal" href={`/collection/${item.slug}`}>
-                <div class="plate__ph">
-                  <img
-                    src={item.primaryImage}
-                    alt={item.imageAltText || item.name}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <p class="plate__num">{plateLabel(item)}</p>
-                <h3 class="plate__name">{item.name}</h3>
-                {item.shortDescription && <p class="plate__meta">{item.shortDescription}</p>}
-              </a>
-            ))}
-          </div>
+    <div class="container">
+      <!-- ── From the Curator ──────────────────────────────────────────── -->
+      <section class="leader" aria-label="From the Curator">
+        <div class="leader__head">From the Curator</div>
+        <div class="leader__body">
+          <p>I did not set out to build a museum. I set out to keep a few things from disappearing — a map that mistook my island for a second world, a typewriter that survived a war, a barometer a club once gave away as a prize.</p>
+          <p>The Meridian is the line I draw through them: objects gathered far apart, from Ceylon and Britain and places further still, set down here so they might be read together rather than scattered and forgotten.</p>
+          <p class="leader__sign">— Yulan Galagoda</p>
         </div>
       </section>
-    )}
 
-    <!-- ── Fields of the collection ──────────────────────────────────────── -->
-    {fields.length > 0 && (
-      <section class="section-gap--sm" aria-label="Fields of the collection">
-        <div class="container">
-          <div class="plates-head">
-            <h2>Fields of the collection</h2>
-            <div class="plates-head__rule" aria-hidden="true"></div>
-            <a href="/categories">All fields →</a>
+      <!-- ── From the Collection ───────────────────────────────────────── -->
+      {more.length > 0 && (
+        <section class="section-gap--sm" aria-label="From the collection">
+          <div class="sec-head"><span>From the Collection</span></div>
+          <div class="item-grid">
+            {more.map((item) => <ItemCard item={item} />)}
           </div>
-          <div class="cat-grid">
-            {fields.map((cat) => (
-              <a class="cat-card reveal" href={`/categories/${cat.slug}`}>
-                <span class="cat-card__icon" aria-hidden="true">
-                  <CategoryIcon slug={cat.slug} />
-                </span>
-                <h3 class="cat-card__name">{cat.name}</h3>
-                {cat.description && <p class="cat-card__desc">{cat.description}</p>}
-                <span class="cat-card__count">{cat.count} {cat.count === 1 ? 'object' : 'objects'} →</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-    )}
+          <p style="text-align:center; margin-top: var(--sp-8);">
+            <a class="lead__more" href="/collection">The full collection →</a>
+          </p>
+        </section>
+      )}
 
-    <!-- ── Narratives teaser ─────────────────────────────────────────────── -->
-    {publishedNarratives.length > 0 && (
-      <section class="section-gap--sm" aria-label="Narratives" style="padding-bottom: var(--section-y);">
-        <div class="container">
-          <div class="plates-head">
-            <h2>Narratives</h2>
-            <div class="plates-head__rule" aria-hidden="true"></div>
-            <a href="/narratives">All narratives →</a>
-          </div>
+      <!-- ── Narratives ────────────────────────────────────────────────── -->
+      {publishedNarratives.length > 0 && (
+        <section class="section-gap--sm" aria-label="Narratives">
+          <div class="sec-head"><span>Narratives</span></div>
           <div class="narr-grid">
             {publishedNarratives.map((n, idx) => (
-              <a class="narr-card reveal" href={`/narratives/${n.slug}`}>
+              <a class="narr-card" href={`/narratives/${n.slug}`}>
                 <p class="narr-card__kicker">Narrative · {ROMAN[idx] ?? idx + 1}</p>
                 <h3 class="narr-card__name">{n.name}</h3>
                 {n.premise && <p class="narr-card__premise">{n.premise}</p>}
-                <div class="narr-card__objects">
-                  <span class="narr-card__count">{n.itemIds.length} objects, one story →</span>
-                </div>
+                <div class="narr-card__objects"><span class="narr-card__count">{n.itemIds.length} objects, one story →</span></div>
               </a>
             ))}
           </div>
-        </div>
-      </section>
-    )}
+        </section>
+      )}
+    </div>
   </main>
 
   <Footer itemCount={items.length} />

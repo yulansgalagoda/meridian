@@ -1,7 +1,6 @@
 ---
-// The rotating meridian line — every published object placed along one great
-// circle, slowly turning. Objects fade out at one edge and re-enter at the
-// other; because spacing wraps the full circle, the loop never breaks.
+// The Meridian Line — every dated object set along one slowly drifting rule.
+// Hover pauses it; it idles when scrolled out of view.
 import type { Item } from '../lib/types';
 
 interface Props {
@@ -12,7 +11,7 @@ const { items } = Astro.props;
 
 const arcItems = items
   .filter((i) => i.year !== null)
-  .sort((a, b) => (a.year ?? 0) - (b.year ?? 0))
+  .sort((a, b) => (a.year as number) - (b.year as number))
   .map((i) => ({ y: i.year as number, n: i.name, s: i.slug }));
 
 const years = arcItems.map((i) => i.y);
@@ -20,112 +19,63 @@ const minYear = years.length ? Math.min(...years) : '';
 const maxYear = years.length ? Math.max(...years) : '';
 ---
 
-<section class="arc-section" aria-label="Timeline of the collection">
-  <div class="container">
-    <div class="arc-head">
-      <span class="arc-head__t">The meridian line · {arcItems.length} objects · {minYear} – {maxYear}</span>
-      <div class="arc-controls">
-        <button class="arc-btn" id="arc-past" title="Drift toward the past" aria-label="Rotate toward the past">‹</button>
-        <button class="arc-btn is-on" id="arc-future" title="Drift toward the present" aria-label="Rotate toward the present">›</button>
-      </div>
-    </div>
-    <svg id="meridian-arc" viewBox="0 185 1200 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rotating timeline showing every object in the collection by year"></svg>
-    <div class="arc-caption">Every object takes its place along the line — the line turns, the centuries pass</div>
+<section class="container" aria-label="Timeline of the collection">
+  <div class="timeline" id="meridian-line">
+    <div class="timeline__label">The Meridian Line<br />{arcItems.length} objects<br />{minYear} – {maxYear}</div>
+    <div class="tl-base" aria-hidden="true"></div>
+    <div class="timeline__track" id="tl-track"></div>
   </div>
 </section>
 
 <script define:vars={{ arcItems }}>
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const svg = document.getElementById('meridian-arc');
-  if (svg && arcItems.length) {
-    const CX = 600, CY = 1560, R = 1300;   // circle centre far below the canvas → gentle arc
-    const SPACING = 8;                      // degrees between objects
-    const TOTAL = Math.max(arcItems.length * SPACING, 64); // full loop; min span keeps small collections sane
-    const FADE_IN = 22, FADE_OUT = 28;      // visibility window (degrees from centre)
-    const SPEED = 0.55;                     // degrees per second — slow, calm
-    let offset = -Math.floor(arcItems.length / 2.5) * SPACING;
-    let dir = 1;                            // 1 → drifts toward the present
-    let paused = false;
+  (function () {
+    const track = document.getElementById('tl-track');
+    const section = document.getElementById('meridian-line');
+    if (!track || !section || !arcItems.length) return;
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const SP = 205;
+    const total = arcItems.length * SP;
+    const START = 145; // clear the fixed label
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function arcPath(degSpan) {
-      const a = (degSpan * Math.PI) / 180;
-      const x1 = CX - R * Math.sin(a), y1 = CY - R * Math.cos(a);
-      const x2 = CX + R * Math.sin(a), y2 = CY - R * Math.cos(a);
-      return `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-    }
+    const fmtYear = (y) => (y < 0 ? Math.abs(y) + ' BCE' : String(y));
 
-    const dots = document.createElementNS(SVG_NS, 'path');
-    dots.setAttribute('class', 'arc-dots');
-    dots.setAttribute('d', arcPath(30));
-    svg.appendChild(dots);
-
-    const line = document.createElementNS(SVG_NS, 'path');
-    line.setAttribute('class', 'arc-line');
-    line.setAttribute('d', arcPath(26));
-    svg.appendChild(line);
-
-    const groups = arcItems.map((it, i) => {
-      const a = document.createElementNS(SVG_NS, 'a');
-      a.setAttribute('href', `/collection/${it.s}`);
-      a.setAttribute('class', 'obj');
-      a.setAttribute('aria-label', `${it.n}, ${it.y}`);
-      const d = document.createElementNS(SVG_NS, 'rect');
-      d.setAttribute('class', 'diamond');
-      d.setAttribute('width', '9');
-      d.setAttribute('height', '9');
-      const yr = document.createElementNS(SVG_NS, 'text');
-      yr.setAttribute('class', 'yr');
-      yr.setAttribute('text-anchor', 'middle');
-      yr.textContent = it.y < 0 ? `${Math.abs(it.y)} BCE` : String(it.y);
-      const nm = document.createElementNS(SVG_NS, 'text');
-      nm.setAttribute('class', 'nm');
-      nm.setAttribute('text-anchor', 'middle');
-      nm.textContent = it.n.length > 34 ? it.n.slice(0, 32).trimEnd() + '…' : it.n;
-      a.appendChild(d); a.appendChild(yr); a.appendChild(nm);
-      a.addEventListener('pointerenter', () => { paused = true; });
-      a.addEventListener('pointerleave', () => { paused = false; });
-      svg.appendChild(a);
-      return { g: a, d, yr, nm, tier: i % 2 };
+    const nodes = arcItems.map((it) => {
+      const a = document.createElement('a');
+      a.className = 'tl-item';
+      a.href = '/collection/' + it.s;
+      a.setAttribute('aria-label', it.n + ', ' + fmtYear(it.y));
+      const name = it.n.length > 30 ? it.n.slice(0, 28).trimEnd() + '…' : it.n;
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = name;
+      const dot = document.createElement('span'); dot.className = 'dot';
+      const yr = document.createElement('span'); yr.className = 'yr'; yr.textContent = fmtYear(it.y);
+      a.append(nm, dot, yr);
+      track.appendChild(a);
+      return a;
     });
 
-    function place(o, relDeg) {
-      const a = (relDeg * Math.PI) / 180;
-      const x = CX + R * Math.sin(a);
-      const y = CY - R * Math.cos(a);
-      const ab = Math.abs(relDeg);
-      const op = ab <= FADE_IN ? 1 : ab >= FADE_OUT ? 0 : 1 - (ab - FADE_IN) / (FADE_OUT - FADE_IN);
-      o.g.setAttribute('opacity', op.toFixed(3));
-      o.g.style.pointerEvents = op > 0.5 ? 'auto' : 'none';
-      o.d.setAttribute('x', (x - 4.5).toFixed(1));
-      o.d.setAttribute('y', (y - 4.5).toFixed(1));
-      o.d.setAttribute('transform', `rotate(45 ${x.toFixed(1)} ${y.toFixed(1)})`);
-      o.yr.setAttribute('x', x.toFixed(1));
-      o.yr.setAttribute('y', (y + 30).toFixed(1));
-      const lift = o.tier === 0 ? 24 : 48;
-      o.nm.setAttribute('x', x.toFixed(1));
-      o.nm.setAttribute('y', (y - lift).toFixed(1));
+    let off = 0, paused = false, visible = true, last = null;
+    track.addEventListener('pointerenter', () => (paused = true));
+    track.addEventListener('pointerleave', () => (paused = false));
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver((es) => { visible = es[0].isIntersecting; }, { threshold: 0 }).observe(section);
     }
 
-    let last = null;
-    function frame(ts) {
-      if (last !== null && !paused && !reduced) {
-        offset -= (dir * SPEED * (ts - last)) / 1000;
-      }
-      last = ts;
-      groups.forEach((o, i) => {
-        let rel = ((i * SPACING + offset) % TOTAL + TOTAL) % TOTAL;
-        if (rel > TOTAL / 2) rel -= TOTAL;
-        place(o, rel);
+    function place() {
+      nodes.forEach((nd, i) => {
+        const x = (((i * SP + off) % total) + total) % total;
+        nd.style.left = x + START + 'px';
       });
+    }
+    place();
+
+    function frame(ts) {
+      if (last !== null && !paused && visible && !reduced) off -= (ts - last) * 0.013;
+      last = ts;
+      if (!paused && visible && !reduced) place();
       requestAnimationFrame(frame);
     }
-    requestAnimationFrame(frame);
-
-    const bPast = document.getElementById('arc-past');
-    const bFut = document.getElementById('arc-future');
-    bPast?.addEventListener('click', () => { dir = -1; bPast.classList.add('is-on'); bFut?.classList.remove('is-on'); });
-    bFut?.addEventListener('click', () => { dir = 1; bFut.classList.add('is-on'); bPast?.classList.remove('is-on'); });
-  }
+    if (!reduced) requestAnimationFrame(frame);
+  })();
 </script>
