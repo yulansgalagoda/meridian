@@ -358,11 +358,12 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 400; line-height: var
 .item-card__meta-piece { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
 .item-card__meta-sep { width: 2px; height: 2px; border-radius: 50%; background: var(--paper-4); }
 
-/* ── Page header ─────────────────────────────────────────────────────────── */
-.page-header { padding-block: var(--sp-10) var(--sp-6); border-bottom: 1px solid var(--ink); margin-bottom: var(--sp-8); text-align: center; }
-.page-header__title { font-size: var(--text-2xl); margin-top: var(--sp-3); color: var(--ink); }
-.page-header__desc { margin: var(--sp-4) auto 0; font-size: var(--text-base); color: var(--ink-soft); max-width: 60ch; line-height: var(--lh-read); }
-.page-header__count { margin-top: var(--sp-3); }
+/* ── Page header (section nameplate) ─────────────────────────────────────── */
+.page-header { padding-block: var(--sp-10) var(--sp-5); border-bottom: 3px double var(--ink); margin-bottom: var(--sp-10); text-align: left; }
+.page-header .eyebrow, .page-header__kicker { display: block; margin-bottom: var(--sp-3); }
+.page-header__title { font-size: var(--text-3xl); line-height: 1.02; margin-top: 0; color: var(--ink); }
+.page-header__desc { margin: var(--sp-5) 0 0; font-size: var(--text-lg); font-style: italic; color: var(--ink-soft); max-width: 56ch; line-height: 1.45; }
+.page-header__count { margin-top: var(--sp-4); }
 
 /* ── Category cards ──────────────────────────────────────────────────────── */
 .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--rule-soft); }
@@ -516,12 +517,12 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 400; line-height: var
 
 /* ── Prose / policy / about ──────────────────────────────────────────────── */
 .prose-page { max-width: var(--container-narrow); margin: 0 auto; padding: 0 var(--sp-6) var(--sp-20); }
-.prose-page__header { text-align: center; padding-block: var(--sp-12) var(--sp-6); }
-.prose-page__kicker { font-family: var(--mono); font-size: 11px; letter-spacing: var(--tr-caps-xl); text-transform: uppercase; color: var(--oxblood); }
-.prose-page__title { font-size: var(--text-2xl); margin-top: var(--sp-4); }
-.prose-page__orn { display: flex; align-items: center; gap: var(--sp-4); color: var(--oxblood); margin: var(--sp-6) auto 0; max-width: 11rem; }
-.prose-page__orn::before, .prose-page__orn::after { content: ""; flex: 1; border-top: 1px solid var(--rule-soft); }
+.prose-page__header { text-align: left; padding-block: var(--sp-12) var(--sp-5); border-bottom: 3px double var(--ink); margin-bottom: var(--sp-8); }
+.prose-page__kicker { font-family: var(--mono); font-size: 11px; letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--oxblood); display: block; margin-bottom: var(--sp-3); }
+.prose-page__title { font-size: var(--text-3xl); line-height: 1.02; margin-top: 0; }
+.prose-page__orn { display: none; }
 
+.prose-body > p:first-of-type::first-letter { font-family: var(--display); float: left; font-size: 3.4em; line-height: 0.72; padding: 0.05em 0.12em 0 0; color: var(--oxblood); }
 .prose-body p, .about-body p { font-size: var(--text-md); line-height: var(--lh-read); color: var(--ink-soft); margin-bottom: var(--sp-5); }
 .about-body p:first-child { font-size: var(--text-lg); color: var(--ink); }
 .about-body p:first-child::first-letter { font-family: var(--display); float: left; font-size: 3.4em; line-height: 0.72; padding: 0.05em 0.12em 0 0; color: var(--oxblood); }
